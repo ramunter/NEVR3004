@@ -17,13 +17,15 @@ for(cellname in data$cellnames){
         result = calculateFiringRate(data$spiketimes[cellname], data$binned_awake_angle_data)
         result$angles_at_firing=NULL
         result$firing_rate = (result$firing_rate - min(result$firing_rate)) / (max(result$firing_rate) - min(result$firing_rate))
-        result = as.data.frame(result)
-        result = cbind(result, cellname)
-        firing_curves = rbind(firing_curves, result)
+        if(max(result$firing_rate) > 0.5){
+          result = as.data.frame(result)
+          result = cbind(result, cellname)
+          firing_curves = rbind(firing_curves, result)
+        }
     }
 }
 # df = data.frame(x = result$plotting_angles, y = result$firing_rate)
 
 library('ggplot2')
-ggplot(data=firing_curves) + geom_line(aes(x=plotting_angle, y=firing_rate, color=cellname))
+ggplot(data=firing_curves) + geom_line(aes(x=plotting_angles, y=firing_rate, color=cellname))
 ```
