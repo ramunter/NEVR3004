@@ -1,51 +1,90 @@
 ---
-title: "Problem1"
+title: "Problem 1"
 author: "Rasmus Munter"
 date: "May 2, 2018"
 output: pdf_document
 ---
+
+
+```{r include=FALSE}
+knitr::opts_chunk$set(include=FALSE, cache=TRUE)
+library('ggplot2')
+library('directlabels')
+```
+
+This is an investigation of neuron specificity to head direction in mice. The dataset consists of finished data from tetrodes in a mouse brain and has been preprocessed to extract the firing of individual neurons. To simplify finding neurons with a relation with head angle the following plot.
+
 ```{r}
 source('./Util/importData.R')
-source('./Util/calculateFiringRate.R')
-data = importData('./Mouse12-120806/Mouse12-120806', 13)
+data1 = importData('./Mouse12-120806/Mouse12-120806', 12)
+```
+
+```{r echo=FALSE, include=TRUE}
+source('./problem1scripts.R')
+# tuning_curves1 = createTuningCurveDataFrame(data)1
+ggplot(data=tuning_curves1, aes(x=angle_bins, y=firing_rate, color=cell)) + 
+    facet_wrap( ~ tetrode, ncol=4, scale='free_y') +
+    geom_line() + 
+    geom_dl(aes(label=cell), color='black', method=list("top.bumpup", cex=0.5))
+
+## ALL curves seperately
+# ggplot(data=tuning_curves1, aes(x=angle_bins, y=firing_rate, color=cell)) + 
+#     facet_wrap( ~ cellname, ncol=4, scale='free_y') +
+#     geom_line() + 
+#     geom_dl(aes(label=cell), color='black', method=list("top.bumpup", cex=0.5))+
+#     theme(strip.background = element_blank(), strip.text.x = element_blank(),
+#           axis.ticks.x = element_blank(), axis.ticks.y = element_blank(),
+#           axis.text.x = element_blank(), axis.text.y = element_blank())
+```
+
+Cells that seem significant:
+
+* T3C6
+* T3C9
+* T3C11
+* T4C7
+* T4C8
+* T4C9
+
+Strange cells:
+* T4C2
+* T3C2
+
+Extracting only these:
+```{r}
+nice_cellnames = c('T3C6', 'T3C9', 'T3C11', 'T4C7', 'T4C8', 'T4C9')
+nice_cells = tuning_curves1[tuning_curves1$cellname %in% nice_cellnames,]
+ggplot(data=nice_cells, aes(x=angle_bins, y=firing_rate, color=cellname)) + 
+    facet_wrap( ~ cellname, ncol=3, scale='free_y') +
+    geom_line() + theme(legend.position="none")
+```
+```{r}
+strange_cellnames = c('T3C2', 'T4C2')
+strange_cells = tuning_curves1[tuning_curves1$cellname %in% strange_cellnames,]
+ggplot(data=strange_cells, aes(x=angle_bins, y=firing_rate, color=cellname)) + 
+    facet_wrap( ~ cellname, ncol=2, scale='free_y') +
+    geom_line() + theme(legend.position="none")
+```
+
+
+
+```{r}
+data2 = importData('./Mouse12-120807/Mouse12-120807', 12)
 ```
 
 ```{r}
-firing_curves = data.frame()
-for(cellname in data$cellnames){
-    if(length(data$spiketimes[[cellname]]) != 0){
-        result = calculateFiringRate(data$spiketimes[cellname], data$binned_awake_angle_data)
-        result$angles_at_firing=NULL
-        result$firing_rate = result$firing_rate/sum(result$firing_rate)
-        result = as.data.frame(result)
-        result = cbind(result, cellname)
-        firing_curves = rbind(firing_curves, result)
-    }
-}
-# df = data.frame(x = result$plotting_angles, y = result$firing_rate)
-
-library('ggplot2')
-ggplot(data=firing_curves) + geom_line(aes(x=plotting_angles, y=firing_rate, color=cellname))
+tuning_curves2 = createTuningCurveDataFrame(data2)
+ggplot(data=tuning_curves2, aes(x=angle_bins, y=firing_rate, color=cell)) + 
+    facet_wrap( ~ tetrode, ncol=4, scale='free_y') +
+    geom_line() + 
+    geom_dl(aes(label=cell), color='black', method=list("top.bumpup", cex=0.5))
 ```
 
-Filtering out everything below 0.05.
+```{r}
+data3 = importData('./Mouse12-120808/Mouse12-120808', 12)
+```
 
 ```{r}
-firing_curves = data.frame()
-for(cellname in data$cellnames){
-    if(length(data$spiketimes[[cellname]]) != 0){
-        result = calculateFiringRate(data$spiketimes[cellname], data$binned_awake_angle_data)
-        result$angles_at_firing=NULL
-        result$firing_rate = result$firing_rate/sum(result$firing_rate)
-        if(max(result$firing_rate) > 0.05){
-            result = as.data.frame(result)
-            result = cbind(result, cellname)
-            firing_curves = rbind(firing_curves, result)
-        }
-    }
-}
-# df = data.frame(x = result$plotting_angles, y = result$firing_rate)
-
-library('ggplot2')
-ggplot(data=firing_curves) + geom_line(aes(x=plotting_angles, y=firing_rate, color=cellname))
+tuning_curves3 = createTuningCurveDataFrame(data3)
+ggplot(data=tuning_curves3) + geom_line(aes(x=angle_bins, y=firing_rate, color=cell)) + facet_wrap( ~ tetrode, ncol=4, scale='free_y')
 ```

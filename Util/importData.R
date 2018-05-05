@@ -7,13 +7,13 @@ interpolateBetweenPoints = function(xx,ind0,ind1,y0,y1,angle_freq){
   if(yd>pi){               
     y1=y1-2*pi
   }
-  else if(yd<-pi){
+  else if(yd<(-pi)){
     y1=y1+2*pi
   }
   x0=1000*ind0/angle_freq            
   x1=1000*ind1/angle_freq
   yy=y0 + (xx-x0)*(y1-y0)/(x1-x0) #linear interpolation
-  return(yy%%2*pi)
+  return(yy%%(2*pi))
 }
 
 importData = function(directory_name, numfiles){
@@ -61,7 +61,7 @@ importData = function(directory_name, numfiles){
         cellnames_per_tetrode = matrix(list(), 1, number_cells_in_tetrode)
         spiketimes_this_tetrode = matrix(list(), 1, number_cells_in_tetrode)
         for(cellnum in 1:number_cells_in_tetrode){
-            cellnames_per_tetrode[[1,cellnum]] = paste('T',tetrode,'C',cellnum,sep='')
+            cellnames_per_tetrode[,cellnum] = paste('T',tetrode,'C',cellnum,sep='')
             cell_index = which(tetrode_number == cellnum)-1 #### Must be -1 because first index of Tetrode Number does not correspond to a real cell number
             timestamps_cell=timestamps_ms[cell_index]
             #goes and finds the cell timestamp at the input index, as decided by the previous code
@@ -85,7 +85,7 @@ importData = function(directory_name, numfiles){
         spiketimes_this_tetrode=NULL; #variable must be cleared on every iteration of tetrode for loop.
     }
     
-    names(spiketimes) = cellnames
+    names(spiketimes) = cellnames[1,]
     ####
     ## Angle Data
     angle_freq=1250/32;    # Angle measurement rate (1,250 is the EEG sampling rate and 32 the
@@ -127,7 +127,7 @@ importData = function(directory_name, numfiles){
         ind0=ceiling(i/(1000/angle_freq)) ### SHOULD THIS BE FLOOR???
         ind1=ind0+1;
         if(ind1>length(awake_angle_data)){
-            continue
+            next
         }
         y0=awake_angle_data[ind0]
         y1=awake_angle_data[ind1]
@@ -136,7 +136,7 @@ importData = function(directory_name, numfiles){
     
     return(list(cellnames=cellnames,
                 spiketimes=spiketimes,
-                binned_awake_angle_data=binned_awake_angle_data,
+                awake_angle=binned_awake_angle_data,
                 resclu=resclu))
 }
 

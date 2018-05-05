@@ -1,4 +1,4 @@
-%[cellnames, spiketimes, binnedAwakeAngleData,resclu] = Import_data("Mouse12-120806/Mouse12-120806",13);
+[cellnames, spiketimes, binnedAwakeAngleData,resclu] = Import_data("Mouse12-120806/Mouse12-120806",13);
 
 figure
 xlabel('Head angle from 0-360 degrees')
