@@ -27,3 +27,25 @@ for(cellname in data$cellnames){
 library('ggplot2')
 ggplot(data=firing_curves) + geom_line(aes(x=plotting_angles, y=firing_rate, color=cellname))
 ```
+
+Filtering out everything below 0.05.
+
+```{r}
+firing_curves = data.frame()
+for(cellname in data$cellnames){
+    if(length(data$spiketimes[[cellname]]) != 0){
+        result = calculateFiringRate(data$spiketimes[cellname], data$binned_awake_angle_data)
+        result$angles_at_firing=NULL
+        result$firing_rate = result$firing_rate/sum(result$firing_rate)
+        if(max(result$firing_rate) > 0.05){
+            result = as.data.frame(result)
+            result = cbind(result, cellname)
+            firing_curves = rbind(firing_curves, result)
+        }
+    }
+}
+# df = data.frame(x = result$plotting_angles, y = result$firing_rate)
+
+library('ggplot2')
+ggplot(data=firing_curves) + geom_line(aes(x=plotting_angles, y=firing_rate, color=cellname))
+```
