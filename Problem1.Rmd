@@ -16,12 +16,10 @@ for(cellname in data$cellnames){
     if(length(data$spiketimes[[cellname]]) != 0){
         result = calculateFiringRate(data$spiketimes[cellname], data$binned_awake_angle_data)
         result$angles_at_firing=NULL
-        result$firing_rate = (result$firing_rate - min(result$firing_rate)) / (max(result$firing_rate) - min(result$firing_rate))
-        if(max(result$firing_rate) > 0.5){
-          result = as.data.frame(result)
-          result = cbind(result, cellname)
-          firing_curves = rbind(firing_curves, result)
-        }
+        result$firing_rate = result$firing_rate/sum(result$firing_rate)
+        result = as.data.frame(result)
+        result = cbind(result, cellname)
+        firing_curves = rbind(firing_curves, result)
     }
 }
 # df = data.frame(x = result$plotting_angles, y = result$firing_rate)
