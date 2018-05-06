@@ -1,6 +1,6 @@
 # Creates a dataframe with the cell firing rates at different angles.
 createTuningCurveDataFrame = function(data){
-    source('./Util/calculateFiringRate.R')
+    source('./util/calculateFiringRate.R')
     tuning_curves = data.frame()
     angle_bins = getAngleBins(data$awake_angle, 40)
     

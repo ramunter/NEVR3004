@@ -1,5 +1,5 @@
 ---
-title: "Problem 1"
+title: "NEVR3004"
 author: "Rasmus Munter"
 date: "May 2, 2018"
 output: pdf_document
@@ -11,17 +11,18 @@ knitr::opts_chunk$set(include=FALSE, cache=TRUE)
 library('ggplot2')
 library('directlabels')
 ```
+# Project 1
 
 This is an investigation of neuron specificity to head direction in mice. The dataset consists of finished data from tetrodes in a mouse brain and has been preprocessed to extract the firing of individual neurons. To simplify finding neurons with a relation with head angle the following plot.
 
 ```{r}
-source('./Util/importData.R')
+source('./util/importData.R')
 data1 = importData('./Mouse12-120806/Mouse12-120806', 12)
 ```
 
 ```{r echo=FALSE, include=TRUE}
-source('./problem1scripts.R')
-# tuning_curves1 = createTuningCurveDataFrame(data)1
+source('./util/problem1.R')
+tuning_curves1 = createTuningCurveDataFrame(data1)
 ggplot(data=tuning_curves1, aes(x=angle_bins, y=firing_rate, color=cell)) + 
     facet_wrap( ~ tetrode, ncol=4, scale='free_y') +
     geom_line() + 
@@ -66,25 +67,18 @@ ggplot(data=strange_cells, aes(x=angle_bins, y=firing_rate, color=cellname)) +
     geom_line() + theme(legend.position="none")
 ```
 
-
-
-```{r}
-data2 = importData('./Mouse12-120807/Mouse12-120807', 12)
-```
+# Project 2 
 
 ```{r}
-tuning_curves2 = createTuningCurveDataFrame(data2)
-ggplot(data=tuning_curves2, aes(x=angle_bins, y=firing_rate, color=cell)) + 
-    facet_wrap( ~ tetrode, ncol=4, scale='free_y') +
-    geom_line() + 
-    geom_dl(aes(label=cell), color='black', method=list("top.bumpup", cex=0.5))
+source("./util/problem2.R")
+nice_cells = addGaussianEstimate(nice_cells)
+nice_cells = addCosineEstimate(nice_cells)
+ggplot(data=nice_cells) + geom_line(aes(x=angle_bins, y=firing_rate, group=cellname)) +
+    geom_line(aes(x=angle_bins, y=gaussian_estimate, group=cellname), color='red') +
+    geom_line(aes(x=angle_bins, y=cosine_estimate, group=cellname), color='blue') +
+    facet_wrap(~cellname, ncol=2)
+
 ```
 
-```{r}
-data3 = importData('./Mouse12-120808/Mouse12-120808', 12)
-```
 
-```{r}
-tuning_curves3 = createTuningCurveDataFrame(data3)
-ggplot(data=tuning_curves3) + geom_line(aes(x=angle_bins, y=firing_rate, color=cell)) + facet_wrap( ~ tetrode, ncol=4, scale='free_y')
-```
+
