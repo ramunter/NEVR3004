@@ -1,0 +1,344 @@
+---
+title: "NEVR3004"
+author: "Rasmus Munter"
+date: "May 2, 2018"
+output: pdf_document
+---
+
+```{r include=FALSE}
+knitr::opts_chunk$set(include=FALSE, cache=TRUE)
+library('ggplot2')
+library('directlabels')
+source('./util/importData.R')
+datasource = c('Mouse24-131213', 'Mouse25-140124', 'Mouse28-140318')
+load_data = FALSE
+```
+# Project 1
+```{r}
+source('./util/problem1.R')
+```
+
+The goal of this project was to look for a relation between neuron firing and the head angle of a mouse. The dataset consists of finished data from tetrodes in a mouse brain and has been preprocessed to extract the activations of individual neurons. To constrain the data amount the following subset of data was used:
+
+* Session 131213 on mouse 24
+* Session 140124 on mouse 25
+* Session 140318 on mouse 38
+
+The mouse head angle was binned into 40 bins giving bins of length 9. To find neurons with a relation the binned angle was plotted against the corresponding average firing rate. Then, manually, any neurons that seemed to have a bump in activity that clearly stood out among the firing activity noise was noted. An example of the plots used to find these follows.
+
+## Visualising cells
+```{r}
+if(load_data){
+    data1 = importData(paste(".",datasource[1],datasource[1],sep="/"), 8)
+    tuning_curves1 = createTuningCurveDataFrame(data1)
+}
+```
+
+```{r}
+# ggplot(data=tuning_curves1, aes(x=angle_bins, y=firing_rate, color=cell)) +
+#     facet_wrap( ~ tetrode, ncol=4, scale='free_y') +
+#     geom_line() +
+#     geom_dl(aes(label=cell), color='black', method=list("top.bumpup", cex=0.8))
+
+## ALL curves seperately
+ggplot(data=tuning_curves1, aes(x=angle_bins, y=firing_rate, color=tetrode)) +
+    facet_wrap( ~ cellname, ncol=10, scale='free_y') +
+    geom_line() +
+    theme(strip.text.x = element_text(size = 6),
+          axis.ticks.x = element_blank(), axis.ticks.y = element_blank(),
+          axis.text.x = element_blank(), axis.text.y = element_blank())
+```
+
+```{r}
+## Store nice cells
+cortex_cellnames1 = c('T1C1', 'T2C3')
+cortex_cells = tuning_curves1[tuning_curves1$cellname %in% cortex_cellnames1,]
+cortex_cells$mouse = datasource[1]
+
+thalamus_cellnames1 = c('T7C3','T7C4')
+thalamus_cells = tuning_curves1[tuning_curves1$cellname %in% thalamus_cellnames1,]
+thalamus_cells$mouse = datasource[1]
+```
+
+```{r}
+if(load_data){
+    data2 = importData(paste(".",datasource[2],datasource[2],sep="/"), 8)
+    tuning_curves2 = createTuningCurveDataFrame(data2)
+}
+```
+
+```{r}
+
+ggplot(data=tuning_curves2, aes(x=angle_bins, y=firing_rate, color=cell)) +
+    facet_wrap( ~ tetrode, ncol=4, scale='free_y') +
+    geom_line() +
+    geom_dl(aes(label=cell), color='black', method=list("top.bumpup", cex=0.8))
+
+```
+
+```{r}
+## Store nice cells
+cortex_cellnames2 = c('T3C6', 'T4C3')
+cortex_cells2 = tuning_curves2[tuning_curves2$cellname %in% cortex_cellnames2,]
+cortex_cells2$mouse = datasource[2]
+
+cortex_cells = rbind(cortex_cells, cortex_cells2)
+
+thalamus_cellnames2 = c('T5C5','T5C7')
+thalamus_cells2 = tuning_curves2[tuning_curves2$cellname %in% thalamus_cellnames2,]
+thalamus_cells2$mouse = datasource[2]
+thalamus_cells = rbind(thalamus_cells, thalamus_cells2)
+```
+
+```{r}
+if(load_data){
+    data3 = importData(paste(".",datasource[3],datasource[3],sep="/"), 11)
+    tuning_curves3 = createTuningCurveDataFrame(data3)
+}
+```
+
+```{r}
+ggplot(data=tuning_curves3, aes(x=angle_bins, y=firing_rate, color=cell)) +
+    facet_wrap( ~ tetrode, ncol=4, scale='free_y') +
+    geom_line() +
+    geom_dl(aes(label=cell), color='black', method=list("top.bumpup", cex=0.8))
+```
+
+
+The following cells were found to have distinct peaks.
+
+```{r}
+## Store nice cells
+cortex_cellnames3 = c('T5C3', 'T7C4')
+cortex_cells3 = tuning_curves3[tuning_curves3$cellname %in% cortex_cellnames3,]
+cortex_cells3$mouse = datasource[3]
+cortex_cells = rbind(cortex_cells, cortex_cells3)
+
+thalamus_cellnames3 = c('T8C2','T8C5','T8C6','T9C10','T9C11','T9C12','T9C13')
+thalamus_cells3 = tuning_curves3[tuning_curves3$cellname %in% thalamus_cellnames3,]
+thalamus_cells3$mouse = datasource[3]
+thalamus_cells = rbind(thalamus_cells, thalamus_cells3)
+```
+
+## Extracting only good cells from the above
+```{r}
+ggplot(data=thalamus_cells, aes(x=angle_bins, y=firing_rate, color=mouse)) + 
+    facet_wrap( ~ cellname, ncol=3, scale='free_y') +
+    geom_line()# + theme(legend.position="none")
+ggplot(data=cortex_cells, aes(x=angle_bins, y=firing_rate, color=mouse)) + 
+    facet_wrap( ~ cellname, ncol=3, scale='free_y') +
+    geom_line()
+```
+
+In the thalamus there were relatively many neurons with distinct peaks. This is to be expected as the thalamus is an area known to have head direction cells and head direction cells are known to have distinct peaks. The subiculum is also supposed to have head direction cells but in general these had more background noise and sharper peaks.
+
+%% Page 290 in the book
+
+For use in further projects the total number of neurons had to be restricted to 10 neurons. The following neurons were chosen from the thalamus and cortex respectively.
+
+## Extracting only good cells from the above
+```{r}
+thalamus_cellnames = c('T7C3', 'T5C5', 'T9C10', 'T9C11', 'T9C12')
+thalamus_cells = thalamus_cells[thalamus_cells$cellname %in% thalamus_cellnames,]
+
+cortex_cellnames = unique(cortex_cells[!(cortex_cells$cellname=='T1C1'),]$cellname)
+cortex_cells = cortex_cells[!(cortex_cells$cellname=='T1C1'),]
+
+ggplot(data=thalamus_cells, aes(x=angle_bins, y=firing_rate, color=mouse)) + 
+    facet_wrap( ~ cellname, ncol=3, scale='free_y') +
+    geom_line() + labs(title='Thalamus cells')
+ggplot(data=cortex_cells, aes(x=angle_bins, y=firing_rate, color=mouse)) + 
+    facet_wrap( ~ cellname, ncol=3, scale='free_y') +
+    geom_line() + labs(title='Cortex cells')
+```
+
+```{r}
+## Shift data where tuning curves are close to border
+shifted_thalamus = c('T7C3', 'T5C5', 'T9C11')
+shifted_cortex = unique(cortex_cells$cellname)
+
+thalamus_cells[thalamus_cells$cellname %in% shifted_thalamus,]$angle_bins = 180 - thalamus_cells[thalamus_cells$cellname %in% shifted_thalamus,]$angle_bins
+thalamus_cells[thalamus_cells$angle_bins < 0,]$angle_bins = 360 + thalamus_cells[thalamus_cells$angle_bins < 0,]$angle_bins
+
+
+cortex_cells[cortex_cells$cellname %in% shifted_cortex,]$angle_bins = 180 - cortex_cells[cortex_cells$cellname %in% shifted_cortex,]$angle_bins
+cortex_cells[cortex_cells$angle_bins < 0,]$angle_bins = 360 + cortex_cells[cortex_cells$angle_bins < 0,]$angle_bins
+```
+
+# Project 2 
+
+For each of the 10 neurons found in the previous project a guassian and cosine function was fit.
+
+## Cortex cell model
+
+```{r}
+source("./util/problem2.R")
+cortex_cells = addGaussianEstimate(cortex_cells)
+cortex_cells = addCosineEstimate(cortex_cells)
+ggplot(data=cortex_cells) + geom_line(aes(x=angle_bins, y=firing_rate, group=cellname), alpha=1, size=1.2) +
+    geom_line(aes(x=angle_bins, y=gaussian_estimate, group=cellname), color='red', alpha=0.6, size=1.2) +
+    geom_line(aes(x=angle_bins, y=cosine_estimate, group=cellname), color='blue', alpha=0.6, size=1.2) +
+    facet_wrap(~cellname, ncol=2, scale='free_y')
+```
+
+## Thalamus cell model
+```{r}
+thalamus_cells = addGaussianEstimate(thalamus_cells)
+thalamus_cells = addCosineEstimate(thalamus_cells)
+ggplot(data=thalamus_cells) + geom_line(aes(x=angle_bins, y=firing_rate, group=cellname), alpha=1, size=1.2) +
+    geom_line(aes(x=angle_bins, y=gaussian_estimate, group=cellname), color='red', alpha=0.6, size=1.2) +
+    geom_line(aes(x=angle_bins, y=cosine_estimate, group=cellname), color='blue', alpha=0.6, size=1.2) +
+    facet_wrap(~cellname, ncol=2, scale='free_y')
+```
+
+For most cells both models proved effective. The only two exceptions are cell T5C3 and T7C4.  
+
+## RMSE plot
+```{r}
+all_cells = rbind(cortex_cells, thalamus_cells)
+ggplot(data=all_cells, aes(x=gaussian_RMSE, y=cosine_RMSE)) + geom_point() +  geom_smooth(method='lm',formula=y~x)
+```
+
+# Project 4
+
+```{r}
+source('./util/problem4.R')
+
+activity_df = data.frame()
+firing_rate_df = data.frame()
+
+for(cell in unique(all_cells$cellname[all_cells$mouse==datasource[1]])){
+    result = calculateTresholdedValues(data1, cell)
+    activity_df = rbind(activity_df, result$activity_df)
+    firing_rate_df = rbind(firing_rate_df, result$firing_rate_df)
+}
+for(cell in unique(all_cells$cellname[all_cells$mouse==datasource[2]])){
+    result = calculateTresholdedValues(data2, cell)
+    activity_df = rbind(activity_df, result$activity_df)
+    firing_rate_df = rbind(firing_rate_df, result$firing_rate_df)
+
+}
+for(cell in unique(all_cells$cellname[all_cells$mouse==datasource[3]])){
+    result = calculateTresholdedValues(data3, cell)
+    activity_df = rbind(activity_df, result$activity_df)
+    firing_rate_df = rbind(firing_rate_df, result$firing_rate_df)
+}
+```
+```{r}
+ggplot(data=activity_df) + geom_histogram(aes(x=activity, y=..density.., fill=category),color='white', size=0.2, bins=40) + scale_fill_brewer(type='qual', palette=1) + facet_wrap(~cellname,ncol = 2, scale="free_y")
+ggplot(data=firing_rate_df) + geom_line(aes(x=angle_bin, y=firing_rate, color=category)) + facet_wrap(~cellname) + facet_wrap(~cellname,ncol = 2, scale="free_y") 
+```
+
+# Project 5
+
+```{r}
+source('./util/problem5.R')
+
+#Split the dataset
+data_split = train_test_split(data3)
+training_data = data_split$training_data
+test_data = data_split$test_data
+```
+
+```{r}
+smoothing_window = 100
+
+# Tuning curves based on training_data
+tuning_curves = createTuningCurveDataFrame(training_data)
+
+# All test data, time by column, cell by row
+result = calculateMomentaryPopulationVector(test_data, smoothing_window)
+momentary_population_matrix = result$momentary_population_matrix
+usable_indexs = result$usable_indexs
+```
+
+```{r}
+prediction = rep(0, length(usable_indexs))
+for(i in 1:length(prediction)){
+    prediction[i] = findHighestCorAngle(momentary_population_matrix[,i], tuning_curves)
+    if(i%%10000 == 0){
+        print(i)
+    }
+}
+```
+
+```{r}
+target = test_data$awake_angle[usable_indexs]*(180/pi)
+rmse=sum(sqrt(angleDiff(prediction,target)^2))/length(prediction)
+```
+
+```{r}
+ggplot(data=data.frame(error=angleDiff(target,prediction))) + geom_histogram(aes(x=error, y=..density..), color='white', binwidth=9)
+```
+## Raw target plots
+
+```{r}
+prediction_df = data.frame(time=1:length(prediction), angle=prediction, type='prediction')
+target_df = data.frame(time=1:length(target), angle=target, type='target')
+df = rbind(prediction_df, target_df)
+ggplot() + geom_point(data=prediction_df, aes(x=time, y=angle),color='black', alpha=0.5) +
+    geom_point(data=target_df, aes(x=time, y=angle), color='blue', alpha=0.2, size=0.5) + coord_polar(theta='y')
+
+ggplot(data=df_binned) + geom_point(aes(x=time, y=angle, color=type))
+```
+## Binned target plots
+```{r}
+bin_size = 9
+target_bin_index = ceiling(target/bin_size)
+target_binned = (target_bin_index-1)*bin_size + bin_size/2
+
+target_binned_df = data.frame(time=1:length(target), angle=target_binned, type='target')
+df_binned = rbind(prediction_df, target_binned_df)
+ggplot() + geom_point(data=prediction_df, aes(x=time, y=angle),color='black', alpha=0.5) +
+    geom_point(data=target_binned_df, aes(x=time, y=angle), color='blue', alpha=0.2, size=0.5) + coord_polar(theta='y')
+
+ggplot(data=df_binned) + geom_point(aes(x=time, y=angle, color=type))
+```
+
+## Confusion matrix
+
+```{r}
+conf_mat = as.data.frame(table(prediction=prediction_df$angle, target_binned))
+ggplot(data=conf_mat) + geom_raster(aes(x=prediction, y=target_binned, fill=Freq))
+```
+
+```{r}
+# predictions = list()
+# usable_indexs = list()
+smoothing_windows = c(5, 10, 50, 100, 150, 200)
+
+for(smoothing_window in smoothing_windows[4:6]){
+    print(paste("Smoothing window",smoothing_window))
+    #Tuning curves based on training_data
+    tuning_curves = createTuningCurveDataFrame(training_data)
+    
+    ## All test data, time by column, cell by row
+    result = calculateMomentaryPopulationVector(test_data, smoothing_window)
+    # momentary_population_matrix = result$momentary_population_matrix
+    usable_index = result$usable_indexs
+    print(length(usable_index))
+    # 
+    # prediction = rep(0, length(usable_indexs))
+    # for(i in 1:length(prediction)){
+    #     prediction[i] = findHighestCorAngle(momentary_population_matrix[,i], tuning_curves)
+    #     if(i%%10000 == 0){
+    #         print(i)
+    #     }
+    # }
+    # predictions = cbind(predictions, list(prediction))
+    usable_indexs = cbind(usable_indexs, list(usable_index))
+}
+# colnames(predictions) = as.character(c(5,10,smoothing_windows))
+```
+
+```{r}
+rmse = rep(0,length(smoothing_windows))
+for(i in 1:length(smoothing_windows)){
+    target = test_data$awake_angle[usable_indexs[i]]*(180/pi)
+    rmse[i]=sum(sqrt(angleDiff(predictions[i],target)^2))/length(prediction)
+}
+ggplot(data=data.frame(window=smoothing_windows, rmse=rmse)) +
+    geom_point(aes(x=window, y=rmse))
+```
+
+page 154 in the book talks about mutual information stuff

@@ -1,0 +1,42 @@
+---
+title: "Shape of the tuning curve"
+author: "Rasmus Munter"
+date: "May 11, 2018"
+output: pdf_document
+---
+
+```{r include=FALSE}
+library('knitr')
+knit_child('project1.Rmd')
+```
+For each of the 10 neurons found in the previous project a guassian and cosine function was fit.
+
+## Cortex cell model
+
+```{r echo=FALSE, include=TRUE}
+source("./util/problem2.R")
+cortex_cells = addGaussianEstimate(cortex_cells)
+cortex_cells = addCosineEstimate(cortex_cells)
+ggplot(data=cortex_cells) + geom_line(aes(x=angle_bins, y=firing_rate, group=cellname), alpha=1, size=1.2) +
+    geom_line(aes(x=angle_bins, y=gaussian_estimate, group=cellname), color='orange', alpha=0.6, size=1.2) +
+    geom_line(aes(x=angle_bins, y=cosine_estimate, group=cellname), color='blue', alpha=0.6, size=1.2) +
+    facet_wrap(~cellname, ncol=2, scale='free_y')
+```
+
+## Thalamus cell model
+```{r echo=FALSE, include=TRUE}
+thalamus_cells = addGaussianEstimate(thalamus_cells)
+thalamus_cells = addCosineEstimate(thalamus_cells)
+ggplot(data=thalamus_cells) + geom_line(aes(x=angle_bins, y=firing_rate, group=cellname), alpha=1, size=1.2) +
+    geom_line(aes(x=angle_bins, y=gaussian_estimate, group=cellname), color='orange', alpha=0.6, size=1.2) +
+    geom_line(aes(x=angle_bins, y=cosine_estimate, group=cellname), color='blue', alpha=0.6, size=1.2) +
+    facet_wrap(~cellname, ncol=2, scale='free_y')
+```
+
+For most cells both models proved effective. The only two exceptions are cell T5C3 and T7C4 where the guassian estimate fit, but the cosine fit failed. However, both these cells are from the subiculum where the measurements are noisy.
+
+## RMSE plot
+```{r echo=FALSE, include=TRUE}
+all_cells = rbind(cortex_cells, thalamus_cells)
+ggplot(data=all_cells, aes(x=gaussian_RMSE, y=cosine_RMSE)) + geom_point() +  geom_smooth(method='lm',formula=y~x)
+```

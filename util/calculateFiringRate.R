@@ -19,16 +19,9 @@ calculateBinnedFiringRate = function(spiketimes, angle_data, angle_bins){
 
     ## Find Which Angles Correspond to Firing Times
     # Make a row vector with zeros to contain the angles corresponding to the time of firing.
-    angles_at_firing=rep(0, length(spiketimes))
-    for(i in 1:length(spiketimes)){
-        if(spiketimes[i] == 0){
-            index_angle=1
-        }
-        else{
-            index_angle=spiketimes[i]
-        }
-        angles_at_firing[i]=angle_data[index_angle]
-    }
+    index_angle = spiketimes
+    index_angle[index_angle==0]=1
+    angles_at_firing = angle_data[index_angle]
     ## Use angles_at_firing to Make Firing Rates For Given Angle Bins
     # Now that the angles at which a given cell is firing have been computed,
     # angles_at_firing, they can be used to compute the firing rates necessary to plot the tuning cuves.

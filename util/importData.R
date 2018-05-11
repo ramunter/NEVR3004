@@ -136,8 +136,7 @@ importData = function(directory_name, numfiles){
     
     return(list(cellnames=cellnames,
                 spiketimes=spiketimes,
-                awake_angle=binned_awake_angle_data,
-                resclu=resclu))
+                awake_angle=binned_awake_angle_data))
 }
 
 

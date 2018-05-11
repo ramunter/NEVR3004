@@ -13,14 +13,15 @@ gaussianTuningCurveMSE = function(par, data){
 }
 
 #Input
-#par[1] = amplitude
+#par[1] = wavelength
 #par[2] = phase
 #par[3] = scale
 #par[4] = offset
 cosineFunction = function(par, x){
+    x = x-par[2]
     return(
-        (abs(par[1]*(x-par[2])) < x) * par[4]+par[3]*(1+cos(par[1]*(x-par[2]))) +
-        (abs(par[1]*(x-par[2])) >= x) * par[4]
+        (abs(par[1]*x) < pi) * (par[4]+par[3]*(1+cos(par[1]*x))) +
+        (abs(par[1]*x) >= pi) * par[4]
     )
 }
 
@@ -30,23 +31,39 @@ cosineTuningCurveMSE = function(par, data){
 }
 
 addGaussianEstimate = function(cells){
-    initial_values = c(mean=0, sd=100, scale=1, offset = 150)
+
     cells$gaussian_estimate = 0
-    for(cellname in cells$cellname){
+    cells$gaussian_RMSE = 0
+    for(cellname in unique(cells$cellname)){
+        
         cell = cells[cells$cellname == cellname,]
-        result = optim(initial_values, gaussianTuningCurveMSE, data=cell, method="BFGS")
+        initial_values = c(mean=cell$angle_bins[which.max(cell$firing_rate)], sd=50, scale=10, offset=0)
+        
+        result = optim(initial_values, gaussianTuningCurveMSE, data=cell, method="BFGS", control=list(maxit=1000))
+        if(result$convergence != 0){
+            print("Did not converge")
+        }
+        
         cells[cells$cellname == cellname,]$gaussian_estimate = gaussianFunction(result$par, cell$angle_bins)
+        cells[cells$cellname == cellname,]$gaussian_RMSE = sqrt(gaussianTuningCurveMSE(result$par, cell))
     }
     return(cells)
 }
 
 addCosineEstimate = function(cells){
-    initial_values = c(amplitude=0, phase=100, scale=1, offset = 150)
     cells$cosine_estimate = 0
-    for(cellname in cells$cellname){
+    cells$cosine_RMSE = 0
+    for(cellname in unique(cells$cellname)){
+        
         cell = cells[cells$cellname == cellname,]
-        result = optim(initial_values, cosineTuningCurveMSE, data=cell, method="BFGS")
+        initial_values = c(wavelength=1/10, phase=cell$angle_bins[which.max(cell$firing_rate)], scale=10, offset=0)
+        
+        result = optim(initial_values, cosineTuningCurveMSE, data=cell, method="BFGS", control=list(maxit=1000))
+        if(result$convergence != 0){
+            print("Did not converge")
+        }
         cells[cells$cellname == cellname,]$cosine_estimate = cosineFunction(result$par, cell$angle_bins)
+        cells[cells$cellname == cellname,]$cosine_RMSE = sqrt(cosineTuningCurveMSE(result$par, cell))
     }
     return(cells)
 }

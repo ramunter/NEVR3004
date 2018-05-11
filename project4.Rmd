@@ -1,0 +1,40 @@
+---
+title: "Firing rate adaptation"
+author: "Rasmus Munter"
+date: "May 11, 2018"
+output: pdf_document
+---
+```{r include=FALSE}
+library('knitr')
+knit_child('project2.Rmd')
+```
+
+```{r}
+source('./util/problem4.R')
+
+activity_df = data.frame()
+firing_rate_df = data.frame()
+
+for(cell in unique(all_cells$cellname[all_cells$mouse==datasource[1]])){
+    result = calculateTresholdedValues(data1, cell)
+    activity_df = rbind(activity_df, result$activity_df)
+    firing_rate_df = rbind(firing_rate_df, result$firing_rate_df)
+}
+for(cell in unique(all_cells$cellname[all_cells$mouse==datasource[2]])){
+    result = calculateTresholdedValues(data2, cell)
+    activity_df = rbind(activity_df, result$activity_df)
+    firing_rate_df = rbind(firing_rate_df, result$firing_rate_df)
+
+}
+for(cell in unique(all_cells$cellname[all_cells$mouse==datasource[3]])){
+    result = calculateTresholdedValues(data3, cell)
+    activity_df = rbind(activity_df, result$activity_df)
+    firing_rate_df = rbind(firing_rate_df, result$firing_rate_df)
+}
+```
+```{r echo=FALSE, include=TRUE}
+ggplot(data=activity_df) + geom_histogram(aes(x=activity, y=..density.., fill=category),color='white', size=0.2, bins=40) + scale_fill_brewer(type='qual', palette=1) + facet_wrap(~cellname,ncol = 2, scale="free_y")
+```
+```{r echo=FALSE, include=TRUE}
+ggplot(data=firing_rate_df) + geom_line(aes(x=angle_bin, y=firing_rate, color=category)) + facet_wrap(~cellname) + facet_wrap(~cellname,ncol = 2, scale="free_y") 
+```

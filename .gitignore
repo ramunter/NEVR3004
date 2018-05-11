@@ -1,5 +1,5 @@
 Mouse*/
-.R*
-
+.Rhistory
+*_cache/
 
 .Rproj.user

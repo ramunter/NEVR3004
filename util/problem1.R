@@ -1,10 +1,10 @@
 # Creates a dataframe with the cell firing rates at different angles.
-createTuningCurveDataFrame = function(data){
+createTuningCurveDataFrame = function(data, bins=40){
     source('./util/calculateFiringRate.R')
     tuning_curves = data.frame()
-    angle_bins = getAngleBins(data$awake_angle, 40)
+    angle_bins = getAngleBins(data$awake_angle, bins)
     
-    for(cellname in data$cellnames){
+    for(cellname in unique(data$cellnames)){
         if(length(data$spiketimes[[cellname]]) != 0){
             firing_rate = calculateBinnedFiringRate(data$spiketimes[cellname], data$awake_angle, angle_bins)$firing_rate
             name = unlist(strsplit(cellname, 'C'))
