@@ -35,14 +35,15 @@ if(load_data){
 ```
 
 ```{r}
-# ggplot(data=tuning_curves1, aes(x=angle_bins, y=firing_rate, color=cell)) +
-#     facet_wrap( ~ tetrode, ncol=4, scale='free_y') +
-#     geom_line() +
-#     geom_dl(aes(label=cell), color='black', method=list("top.bumpup", cex=0.8))
+## Overlaying curves
+ggplot(data=tuning_curves1, aes(x=angle_bins, y=firing_rate, color=cell)) +
+    facet_wrap( ~ tetrode, ncol=4, scale='free_y') +
+    geom_line() +
+    geom_dl(aes(label=cell), color='black', method=list("top.bumpup", cex=0.8))
 
 ## ALL curves seperately
 ggplot(data=tuning_curves1, aes(x=angle_bins, y=firing_rate, color=tetrode)) +
-    facet_wrap( ~ cellname, ncol=10, scale='free_y') +
+    facet_wrap( ~ cellname, ncol=4, scale='free_y') +
     geom_line() +
     theme(strip.text.x = element_text(size = 6),
           axis.ticks.x = element_blank(), axis.ticks.y = element_blank(),
@@ -51,7 +52,7 @@ ggplot(data=tuning_curves1, aes(x=angle_bins, y=firing_rate, color=tetrode)) +
 
 ```{r}
 ## Store nice cells
-cortex_cellnames1 = c('T1C1', 'T2C3')
+cortex_cellnames1 = c('T2C3','T3C4')
 cortex_cells = tuning_curves1[tuning_curves1$cellname %in% cortex_cellnames1,]
 cortex_cells$mouse = datasource[1]
 
@@ -74,17 +75,24 @@ ggplot(data=tuning_curves2, aes(x=angle_bins, y=firing_rate, color=cell)) +
     geom_line() +
     geom_dl(aes(label=cell), color='black', method=list("top.bumpup", cex=0.8))
 
+## ALL curves seperately
+ggplot(data=tuning_curves2, aes(x=angle_bins, y=firing_rate, color=tetrode)) +
+    facet_wrap( ~ cellname, ncol=4, scale='free_y') +
+    geom_line() +
+    theme(strip.text.x = element_text(size = 6),
+          axis.ticks.x = element_blank(), axis.ticks.y = element_blank(),
+          axis.text.x = element_blank(), axis.text.y = element_blank())
 ```
 
 ```{r}
 ## Store nice cells
-cortex_cellnames2 = c('T3C6', 'T4C3')
+cortex_cellnames2 = c('T3C3', 'T3C6', 'T4C3')
 cortex_cells2 = tuning_curves2[tuning_curves2$cellname %in% cortex_cellnames2,]
 cortex_cells2$mouse = datasource[2]
 
 cortex_cells = rbind(cortex_cells, cortex_cells2)
 
-thalamus_cellnames2 = c('T5C5','T5C7')
+thalamus_cellnames2 = c('T5C3','T5C5','T5C7')
 thalamus_cells2 = tuning_curves2[tuning_curves2$cellname %in% thalamus_cellnames2,]
 thalamus_cells2$mouse = datasource[2]
 thalamus_cells = rbind(thalamus_cells, thalamus_cells2)
@@ -102,6 +110,14 @@ ggplot(data=tuning_curves3, aes(x=angle_bins, y=firing_rate, color=cell)) +
     facet_wrap( ~ tetrode, ncol=4, scale='free_y') +
     geom_line() +
     geom_dl(aes(label=cell), color='black', method=list("top.bumpup", cex=0.8))
+
+## ALL curves seperately
+ggplot(data=tuning_curves3, aes(x=angle_bins, y=firing_rate, color=tetrode)) +
+    facet_wrap( ~ cellname, ncol=4, scale='free_y') +
+    geom_line() +
+    theme(strip.text.x = element_text(size = 6),
+          axis.ticks.x = element_blank(), axis.ticks.y = element_blank(),
+          axis.text.x = element_blank(), axis.text.y = element_blank())
 ```
 
 
@@ -109,12 +125,12 @@ The following cells were found to have distinct peaks.
 
 ```{r}
 ## Store nice cells
-cortex_cellnames3 = c('T5C3', 'T7C4')
+cortex_cellnames3 = c('T5C3', 'T5C5')
 cortex_cells3 = tuning_curves3[tuning_curves3$cellname %in% cortex_cellnames3,]
 cortex_cells3$mouse = datasource[3]
 cortex_cells = rbind(cortex_cells, cortex_cells3)
 
-thalamus_cellnames3 = c('T8C2','T8C5','T8C6','T9C10','T9C11','T9C12','T9C13')
+thalamus_cellnames3 = c('T8C5','T8C6','T8C7','T9C10','T9C11','T9C12','T9C13')
 thalamus_cells3 = tuning_curves3[tuning_curves3$cellname %in% thalamus_cellnames3,]
 thalamus_cells3$mouse = datasource[3]
 thalamus_cells = rbind(thalamus_cells, thalamus_cells3)
@@ -141,8 +157,8 @@ For use in further projects the total number of neurons had to be restricted to 
 thalamus_cellnames = c('T7C3', 'T5C5', 'T9C10', 'T9C11', 'T9C12')
 thalamus_cells = thalamus_cells[thalamus_cells$cellname %in% thalamus_cellnames,]
 
-cortex_cellnames = unique(cortex_cells[!(cortex_cells$cellname=='T1C1'),]$cellname)
-cortex_cells = cortex_cells[!(cortex_cells$cellname=='T1C1'),]
+cortex_cellnames = c('T2C3','T3C3','T3C4','T5C3','T3C6')
+cortex_cells = cortex_cells[cortex_cells$cellname %in% cortex_cellnames,]
 
 ggplot(data=thalamus_cells, aes(x=angle_bins, y=firing_rate, color=mouse)) + 
     facet_wrap( ~ cellname, ncol=3, scale='free_y') +
@@ -155,7 +171,7 @@ ggplot(data=cortex_cells, aes(x=angle_bins, y=firing_rate, color=mouse)) +
 ```{r}
 ## Shift data where tuning curves are close to border
 shifted_thalamus = c('T7C3', 'T5C5', 'T9C11')
-shifted_cortex = unique(cortex_cells$cellname)
+shifted_cortex = c('T2C3','T3C3','T5C3','T3C6')
 
 thalamus_cells[thalamus_cells$cellname %in% shifted_thalamus,]$angle_bins = 180 - thalamus_cells[thalamus_cells$cellname %in% shifted_thalamus,]$angle_bins
 thalamus_cells[thalamus_cells$angle_bins < 0,]$angle_bins = 360 + thalamus_cells[thalamus_cells$angle_bins < 0,]$angle_bins
@@ -226,7 +242,7 @@ for(cell in unique(all_cells$cellname[all_cells$mouse==datasource[3]])){
 ```
 ```{r}
 ggplot(data=activity_df) + geom_histogram(aes(x=activity, y=..density.., fill=category),color='white', size=0.2, bins=40) + scale_fill_brewer(type='qual', palette=1) + facet_wrap(~cellname,ncol = 2, scale="free_y")
-ggplot(data=firing_rate_df) + geom_line(aes(x=angle_bin, y=firing_rate, color=category)) + facet_wrap(~cellname) + facet_wrap(~cellname,ncol = 2, scale="free_y") 
+ggplot(data=firing_rate_df) + geom_line(aes(x=angle_bin, y=firing_rate, color=category)) + scale_colour_brewer(type='qual', palette=1) + facet_wrap(~cellname,ncol = 2, scale="free_y") 
 ```
 
 # Project 5

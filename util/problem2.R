@@ -56,7 +56,7 @@ addCosineEstimate = function(cells){
     for(cellname in unique(cells$cellname)){
         
         cell = cells[cells$cellname == cellname,]
-        initial_values = c(wavelength=1/10, phase=cell$angle_bins[which.max(cell$firing_rate)], scale=10, offset=0)
+        initial_values = c(wavelength=1/20, phase=cell$angle_bins[which.max(cell$firing_rate)], scale=max(cell$firing_rate)/2, offset=0)
         
         result = optim(initial_values, cosineTuningCurveMSE, data=cell, method="BFGS", control=list(maxit=1000))
         if(result$convergence != 0){
