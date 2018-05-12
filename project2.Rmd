@@ -8,35 +8,41 @@ output: pdf_document
 ```{r include=FALSE}
 library('knitr')
 knit_child('project1.Rmd')
+theme_set(theme_bw())
 ```
 For each of the 10 neurons found in the previous project a guassian and cosine function was fit.
 
 ## Cortex cell model
 
-```{r echo=FALSE, include=TRUE}
+```{r echo=FALSE, include=TRUE, fig.cap="\\label{cortexModel}"}
 source("./util/problem2.R")
 cortex_cells = addGaussianEstimate(cortex_cells)
 cortex_cells = addCosineEstimate(cortex_cells)
-ggplot(data=cortex_cells) + geom_line(aes(x=angle_bins, y=firing_rate, group=cellname), alpha=1, size=1.2) +
-    geom_line(aes(x=angle_bins, y=gaussian_estimate, group=cellname), color='orange', alpha=0.6, size=1.2) +
-    geom_line(aes(x=angle_bins, y=cosine_estimate, group=cellname), color='blue', alpha=0.6, size=1.2) +
-    facet_wrap(~cellname, ncol=2, scale='free_y')
+ggplot(data=cortex_cells) + geom_line(aes(x=angle_bins, y=firing_rate, color='true', group=cellname), alpha=0.8, size=1.2) +
+    geom_line(aes(x=angle_bins, y=gaussian_estimate, group=cellname, color='gaussian'), alpha=0.8, size=1.2) +
+    geom_line(aes(x=angle_bins, y=cosine_estimate, group=cellname, color='cosine'), alpha=0.8, size=1.2) +
+    facet_wrap(~cellname, ncol=3, scale='free_y') +
+    scale_color_brewer(breaks=c('true','gaussian','cosine'), palette='Set2')
 ```
 
 ## Thalamus cell model
 ```{r echo=FALSE, include=TRUE}
 thalamus_cells = addGaussianEstimate(thalamus_cells)
 thalamus_cells = addCosineEstimate(thalamus_cells)
-ggplot(data=thalamus_cells) + geom_line(aes(x=angle_bins, y=firing_rate, group=cellname), alpha=1, size=1.2) +
-    geom_line(aes(x=angle_bins, y=gaussian_estimate, group=cellname), color='orange', alpha=0.6, size=1.2) +
-    geom_line(aes(x=angle_bins, y=cosine_estimate, group=cellname), color='blue', alpha=0.6, size=1.2) +
-    facet_wrap(~cellname, ncol=2, scale='free_y')
+ggplot(data=thalamus_cells) + geom_line(aes(x=angle_bins, y=firing_rate, group=cellname, color='true'), alpha=1, size=2) +
+    geom_line(aes(x=angle_bins, y=gaussian_estimate, group=cellname, color='gaussian'), alpha=0.8, size=1) +
+    geom_line(aes(x=angle_bins, y=cosine_estimate, group=cellname, color='cosine'), alpha=0.8, size=1) +
+    facet_wrap(~cellname, ncol=3, scale='free_y') +
+    scale_color_brewer(breaks=c('true','gaussian','cosine'), palette='Set2')
 ```
 
-For most cells both models proved effective. The only two exceptions are cell T5C3 and T7C4 where the guassian estimate fit, but the cosine fit failed. However, both these cells are from the subiculum where the measurements are noisy.
+Both models managed to fit a curve relatively well to the actual tuning curve. The two models were then compared by calculating the root mean squared error.
 
 ## RMSE plot
 ```{r echo=FALSE, include=TRUE}
 all_cells = rbind(cortex_cells, thalamus_cells)
-ggplot(data=all_cells, aes(x=gaussian_RMSE, y=cosine_RMSE)) + geom_point() +  geom_smooth(method='lm',formula=y~x)
+ggplot(data=all_cells, aes(x=gaussian_RMSE, y=cosine_RMSE)) +
+    geom_point() +  geom_smooth(method='lm',formula=y~x)
 ```
+
+Continous attractor models suggest that the cosine model should fit best, while the learning model suggests that the gaussian model should fit best. As the gradient of the line of best fit is less than 1 the plot above suggests that the gaussian model and thus the learning model is the best explanation for head direction cells. However since this analysis is done on only 10 cells and the difference in RMSE is relatively small, these results are not conclusinve

@@ -9,7 +9,7 @@ createTuningCurveDataFrame = function(data, bins=40){
         
         # If we have measurements
         if(length(data$spiketimes[[cellname]]) != 0){
-            firing_rate = calculateBinnedFiringRate(data$spiketimes[cellname], data$awake_angle, angle_bins)$firing_rate
+            firing_rate = calculateBinnedFiringRate(data$spiketimes[cellname], data$awake_angle)$firing_rate
             
             # If the minimum firing rate is high, the cell is not tuned
             if(min(firing_rate)<10){

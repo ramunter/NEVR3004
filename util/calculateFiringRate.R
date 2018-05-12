@@ -11,11 +11,10 @@ getAngleBins = function(angle_data, num_bins){
     return(angle_bins)
 }
 
-calculateBinnedFiringRate = function(spiketimes, angle_data, angle_bins){
+calculateBinnedFiringRate = function(spiketimes, angle_data, num_bins=40){
   
     angle_data = unlist(angle_data)
     spiketimes = unlist(spiketimes)
-    num_bins = length(angle_bins)
 
     ## Find Which Angles Correspond to Firing Times
     # Make a row vector with zeros to contain the angles corresponding to the time of firing.
@@ -27,7 +26,7 @@ calculateBinnedFiringRate = function(spiketimes, angle_data, angle_bins){
     # angles_at_firing, they can be used to compute the firing rates necessary to plot the tuning cuves.
     
     # Make a row vector firing_rate of zeros with the total number of bins (nrpoints)
-    firing_rate=rep(0, length(angle_bins))
+    firing_rate=rep(0, num_bins)
     
     # BINNING to find how many spikes are within each radian interval.
     
