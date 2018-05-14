@@ -7,7 +7,7 @@ output: pdf_document
 
 ```{r include=FALSE}
 library('knitr')
-knit_child('project1.Rmd')
+knit_child('project1.Rmd', options=list(include=FALSE))
 theme_set(theme_bw())
 ```
 For each of the 10 neurons found in the previous project a guassian and cosine function was fit.
@@ -40,6 +40,8 @@ Both models managed to fit a curve relatively well to the actual tuning curve. T
 
 ## RMSE plot
 ```{r echo=FALSE, include=TRUE}
+cortex_cells$type = 'cortex'
+thalamus_cells$type = 'thalamus'
 all_cells = rbind(cortex_cells, thalamus_cells)
 ggplot(data=all_cells, aes(x=gaussian_RMSE, y=cosine_RMSE)) +
     geom_point() +  geom_smooth(method='lm',formula=y~x)

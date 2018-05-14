@@ -1,0 +1,105 @@
+---
+title: "How noisy is it?"
+author: "Rasmus Munter"
+date: "May 11, 2018"
+output: pdf_document
+---
+
+```{r include=FALSE}
+library('knitr')
+library(ggpubr)
+knit_child('project2.Rmd')
+theme_set(theme_bw())
+```
+
+```{r}
+source('./util/problem3.R')
+
+all_cells$CV = NaN
+df_isi = list()
+for(cell in unique(all_cells$cellname[all_cells$mouse==datasource[1]])){
+    tuning_curve = all_cells[all_cells$cellname==cell,]
+    result = calculateCoefficentOfVariation(cell, data1, tuning_curve)
+    all_cells[all_cells$cellname==cell,]$CV = result$CV
+    df_isi = rbind(df_isi,result$isi)
+}
+for(cell in unique(all_cells$cellname[all_cells$mouse==datasource[2]])){
+    tuning_curve = all_cells[all_cells$cellname==cell,]
+    result = calculateCoefficentOfVariation(cell, data2, tuning_curve)
+    all_cells[all_cells$cellname==cell,]$CV = result$CV
+    df_isi = rbind(df_isi,result$isi)
+}
+for(cell in unique(all_cells$cellname[all_cells$mouse==datasource[3]])){
+    tuning_curve = all_cells[all_cells$cellname==cell,]
+    result = calculateCoefficentOfVariation(cell, data3, tuning_curve)
+    all_cells[all_cells$cellname==cell,]$CV = result$CV
+    df_isi = rbind(df_isi,result$isi)
+}
+```
+
+The coefficeint of variation is the ratio of variation of the data to its mean. The more noisy the data the higher the CV should be as the data should vary more. Calculating the CV of the interspike interval at different angle bins shows the level of variation in the firing rate.
+
+```{r}
+ggplot(data=all_cells, aes(x=angle_bins)) + 
+    facet_wrap( ~ cellname, ncol=3, scale='free_y') +
+    geom_line(aes(y=firing_rate)) +
+    geom_point(aes(y=firing_rate, fill=CV), size=2, color='black',shape=21) +
+    scale_fill_distiller(palette='RdPu', na.value='NA') +
+    scale_color_continuous(na.value='NA') +
+    theme(axis.ticks.x = element_blank(), axis.ticks.y = element_blank(),
+          axis.text.x = element_blank(), axis.text.y = element_blank())
+```
+```{r include=TRUE, echo=FALSE}
+cellnames_good_cv = c('T3C4','T9C10','T9C12')
+cells_good_cv = all_cells[all_cells$cellname %in% cellnames_good_cv,]
+p1=ggplot(data=cells_good_cv, aes(x=angle_bins)) + 
+    facet_wrap( ~ cellname, ncol=3, scale='free_y') +
+    geom_line(aes(y=firing_rate)) +
+    geom_point(aes(y=firing_rate, fill=CV), size=3, stroke=0.7, color='black', shape=21) +
+    scale_fill_distiller(type='div', palette=4, na.value='NA')
+    
+p2=ggplot(data=cells_good_cv, aes(x=angle_bins)) + 
+    facet_wrap( ~ cellname, ncol=3) +
+    geom_point(aes(y=CV, fill=CV), size=2, stroke=0.7, color='black', shape=21) +
+    scale_fill_distiller(type='div', palette=4, na.value='NA') + 
+    theme(strip.text.x = element_blank(), strip.background = element_blank())
+
+ggarrange(p1,p2, ncol=1, nrow=2)
+    
+```
+
+Due to the size of the bins and the large amount of $NaN$ values in the angle dataset there were relatively few bins with enough measurements to calculate a trustworthy CV. The three cells that had more than 2 CV values are plotted. The data isn't clean but the general trend is that at the peaks the CV is lowest. This indicates that the variability in the firing rate is lower at the peak of the tuning curve for cortex cells. We do not have enough data to analyize the change in CV across the tuning curve.
+
+Comparing the CV in thalamus and cortex cells it can be seen that the thalamus cells that the CV varies more and is generally higher than the CV in the cortex.
+
+* *IS THIS HELPFUL?*
+
+```{r include=TRUE, echo=FALSE}
+ggplot(data=all_cells) + geom_boxplot(aes(x=type, y=CV))
+```
+
+* Possibility for A - simulate data and compare CV
+
+Taking a deeper look at cell 12 in tetrode 9 one can further investigate the ISI distribution. Here it can bee seen that around the peak the distribution looks similar to a poisson process. Further away from the peak the distribution flattens out and doesn't seem to match any known distributions. This suggests that the at the the temporal pattern of the firing rate has little to say and that it is the angle the neuron is encoding.
+
+```{r include=TRUE, echo=FALSE}
+cell = 'T9C12'
+tuning_curve = all_cells[all_cells$cellname==cell,]
+
+peak_angle = tuning_curve$angle_bins[which(max(tuning_curve$firing_rate)==tuning_curve$firing_rate)]
+
+angles = tuning_curve$angle_bins[!is.nan(tuning_curve$CV)]
+isi = df_isi[df_isi$cellname==cell & df_isi$binned_angle %in% angles,]
+isi$peak = isi$binned_angle == peak_angle
+
+ggplot(data=isi) + 
+    facet_wrap(~binned_angle, ncol=4) + 
+    geom_histogram(aes(x=isi, y=..density.., fill=peak), color='white', size=0.2, binwidth=2) + 
+    scale_fill_manual(values=c('black', 'navyblue')) +
+    coord_cartesian(xlim = c(0,60), ylim = NULL) + 
+    theme(legend.position="none")
+```
+
+
+
+

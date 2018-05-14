@@ -339,7 +339,7 @@ df = rbind(prediction_df, target_df)
 ggplot() + geom_point(data=prediction_df, aes(x=time, y=angle),color='black', alpha=0.5) +
     geom_point(data=target_df, aes(x=time, y=angle), color='blue', alpha=0.2, size=0.5) + coord_polar(theta='y')
 
-ggplot(data=df_binned) + geom_point(aes(x=time, y=angle, color=type))
+ggplot(data=binned) + geom_point(aes(x=time, y=angle, color=type))
 ```
 
 ## Binned target plots
@@ -364,33 +364,33 @@ ggplot(data=conf_mat) + geom_raster(aes(x=prediction, y=target_binned, fill=Freq
 ```
 
 ```{r}
-# predictions = list()
-# usable_indexs = list()
+predictions = list()
+usable_indexs = list()
 smoothing_windows = c(5, 10, 50, 100, 150, 200)
 
 for(smoothing_window in smoothing_windows){
     print(paste("Smoothing window",smoothing_window))
     #Tuning curves based on training_data
-    # tuning_curves = createTuningCurveDataFrame(training_data)
-    
+    tuning_curves = createTuningCurveDataFrame(training_data)
+
     ## All test data, time by column, cell by row
     result = calculateMomentaryPopulationVector(test_data, smoothing_window)
-    # momentary_population_matrix = result$momentary_population_matrix
+    momentary_population_matrix = result$momentary_population_matrix
     usable_index = result$usable_indexs
     print(length(usable_index))
-    # 
-    # prediction = rep(0, length(usable_indexs))
-    # for(i in 1:length(prediction)){
-    #     prediction[i] = findHighestCorAngle(momentary_population_matrix[,i], tuning_curves)
-    #     if(i%%10000 == 0){
-    #         print(i)
-    #     }
-    # }
-    # predictions = cbind(predictions, list(prediction))
+
+    prediction = rep(0, length(usable_indexs))
+    for(i in 1:length(prediction)){
+        prediction[i] = findHighestCorAngle(momentary_population_matrix[,i], tuning_curves)
+        if(i%%10000 == 0){
+            print(i)
+        }
+    }
+    predictions = cbind(predictions, list(prediction))
     usable_indexs = cbind(usable_indexs, list(usable_index))
 }
-# colnames(predictions) = as.character(smoothing_windows)
-# colnames(usable_indexs) = as.character(smoothing_windows)
+colnames(predictions) = as.character(smoothing_windows)
+colnames(usable_indexs) = as.character(smoothing_windows)
 ```
 
 ```{r}

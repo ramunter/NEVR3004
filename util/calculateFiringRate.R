@@ -1,6 +1,5 @@
 #Creates angle bins given the number of bins wanted
-getAngleBins = function(angle_data, num_bins){
-    angle_data = unlist(angle_data)
+getAngleBins = function(num_bins){
     angle_bins=rep(0,num_bins)
     for(i in 1:num_bins){
         lower_bound = pi*2/num_bins*(i-1)

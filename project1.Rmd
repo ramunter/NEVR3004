@@ -6,6 +6,10 @@ output: pdf_document
 ---
 ```{r include=FALSE}
 knitr::opts_chunk$set(include=FALSE, cache=TRUE)
+```
+
+```{r}
+
 library('ggplot2')
 library('directlabels')
 source('./util/importData.R')

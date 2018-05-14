@@ -9,6 +9,8 @@ library('knitr')
 knit_child('project2.Rmd')
 ```
 
+Firing rate adaption in heading tuning cells in the thalamus and subiculum was investigated. Firing rate adaptation is the tedency for neurons firing activity to drop if it has been in a period of high activity. According to earlier research head cells do not show firing rate adaptation. To test this the activity data of the recorded neurons was split into three equal datasets based on the recent activity. The firing rate for each neuron was then calculated per dataset and compared.
+
 ```{r}
 source('./util/problem4.R')
 
@@ -33,8 +35,15 @@ for(cell in unique(all_cells$cellname[all_cells$mouse==datasource[3]])){
 }
 ```
 ```{r echo=FALSE, include=TRUE}
-ggplot(data=activity_df) + geom_histogram(aes(x=activity, y=..density.., fill=category),color='white', size=0.2, bins=40) + scale_fill_brewer(type='qual', palette=1) + facet_wrap(~cellname,ncol = 2, scale="free_y")
+ggplot(data=activity_df) +
+    geom_histogram(aes(x=activity, y=..density.., fill=category),color='white', size=0.2, binwidth=1) +
+    scale_fill_brewer(type='qual', palette=1) +
+    facet_wrap(~cellname,ncol = 2, scale="free_y")
 ```
 ```{r echo=FALSE, include=TRUE}
-ggplot(data=firing_rate_df) + geom_line(aes(x=angle_bin, y=firing_rate, color=category)) + facet_wrap(~cellname) + facet_wrap(~cellname,ncol = 2, scale="free_y") 
+ggplot(data=firing_rate_df) + geom_line(aes(x=angle_bin, y=firing_rate, color=category)) + 
+    scale_color_brewer(type='qual', palette=1) +
+    facet_wrap(~cellname,ncol = 2, scale="free_y") 
 ```
+
+Based on figure blah there does not seem to be firing rate adaption as the high activity category tends to have higher or equal firing rate than the low activity category. 

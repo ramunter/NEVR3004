@@ -2,7 +2,7 @@
 createTuningCurveDataFrame = function(data, bins=40){
     source('./util/calculateFiringRate.R')
     tuning_curves = data.frame()
-    angle_bins = getAngleBins(data$awake_angle, bins)
+    angle_bins = getAngleBins(bins)
     
     # Loop through cells
     for(cellname in unique(data$cellnames)){

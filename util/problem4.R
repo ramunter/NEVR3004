@@ -12,7 +12,7 @@ calculateActivity = function(data, cellname, timeframe=200){
     for(i in 1:timeframe){
         sum_activity = sum_activity + c(rep(0,i),activity[1:(total_time-i)])
     }
-    #s
+
     # Remove activity that doesnt have enough history to include timeframe ms of data 
     result = sum_activity[(timeframe+1):total_time]
     return(result)
@@ -20,7 +20,7 @@ calculateActivity = function(data, cellname, timeframe=200){
 
 #Bins the awake_angles vector
 binAwakeAngles = function(awake_angle, bins=40){
-    angle_bins = getAngleBins(awake_angle, 40)
+    angle_bins = getAngleBins(40)
     bin_length = angle_bins[1]*2
     which_bin = ceiling(awake_angle*360/(2*pi)/bin_length)
     which_bin[which_bin==0] = 1
@@ -30,12 +30,18 @@ binAwakeAngles = function(awake_angle, bins=40){
 
 # Set the threshold of activity at 1/3 of the max activity
 thresholdedActivity = function(binned_angles, activity, cellname, bins=40){
-    
-    df=data.frame(binned_angles=binned_angles, activity=activity, cellname=cellname)
 
-    df$category                                                            =  factor('medium', levels=c('low', 'medium', 'high'), ordered=TRUE)
-    df[df$activity < ((max(df$activity)-min(df$activity))/3),]$category    =  factor('low',  levels=c('low', 'medium', 'high'), ordered=TRUE)
-    df[df$activity > (2*(max(df$activity)-min(df$activity))/3),]$category  =  factor('high', levels=c('low', 'medium', 'high'), ordered=TRUE)
+    # activity = activity[which(!is.na(binned_angles))]
+    # binned_angles = na.omit(binned_angles)
+    # 
+    df=data.frame(binned_angles=binned_angles, activity=activity, cellname=cellname)
+    df=df[order(df$activity),]
+    
+    end = length(df$activity)
+
+    df$category                = factor('medium', levels=c('low', 'medium', 'high'), ordered=TRUE)
+    df$category[1:(end/3)]     = factor('low',  levels=c('low', 'medium', 'high'), ordered=TRUE)
+    df$category[(2/3*end):end] = factor('high', levels=c('low', 'medium', 'high'), ordered=TRUE)
     
     return(df)
 }
@@ -47,15 +53,15 @@ thresholdedFiringRate = function(activity_df, data, cellname, bins=40){
     angle_data = data$awake_angle
     categories = as.ordered(c('low', 'medium', 'high'))
 
-    angle_bins = getAngleBins(angle_data, bins)
+    angle_bins = getAngleBins(bins)
     firing_rate_df = data.frame()
     
     for(category in categories){
         
-        index_angle = spiketimes
-        index_angle[index_angle==0]=1
-        index_angle = index_angle[which(activity_df$category[index_angle]==category)] # Filter angles in the correct category
-        angles_at_firing = angle_data[index_angle]
+        spike_index = spiketimes
+        spike_index[spike_index==0]=1
+        spike_index = spike_index[which(activity_df$category[spike_index]==category)] # Filter angles in the correct category
+        angles_at_firing = angle_data[spike_index]
         
         firing_rate = rep(0, bins)
         df = data.frame()
@@ -64,8 +70,13 @@ thresholdedFiringRate = function(activity_df, data, cellname, bins=40){
             lower_bound = pi*2/bins*(i-1)
             upper_bound = pi*2/bins*i
             numspikes=length(which(lower_bound<angles_at_firing & angles_at_firing<upper_bound))
-            occupancy=length(which(lower_bound<angle_data & angle_data<upper_bound))
-            firing_rate[i]=1000*numspikes/occupancy # Convert to firing rates
+            if(numspikes < 1){
+                firing_rate[i]=NA
+            }
+            else{
+                occupancy=length(which(lower_bound<angle_data & angle_data<upper_bound))
+                firing_rate[i]=1000*numspikes/occupancy # Convert to firing rates
+            }
         }
         
         df = data.frame(firing_rate=firing_rate, angle_bin=angle_bins, category = category, cellname=cellname)

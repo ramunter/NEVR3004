@@ -1,0 +1,85 @@
+---
+title: "Decoding and information theory"
+author: "Rasmus Munter"
+date: "May 11, 2018"
+output: pdf_document
+---
+```{r include=FALSE}
+knitr::opts_chunk$set(include=FALSE, echo=FALSE, cache=TRUE)
+library(ggplot2)
+library(knitr)
+
+source('./util/problem5.R')
+
+knit_child('project2.Rmd', options=list(include=FALSE))
+```
+
+```{r}
+#Split the dataset
+data_split = train_test_split(data3)
+training_data = data_split$training_data
+test_data = data_split$test_data
+```
+
+
+
+```{r}
+# From earlier runs, look at rough draft to see how this was run
+smoothing_windows = c(5, 10, 50, 100, 150, 200)
+load('usable_indexs.RData')
+load('predictions.RData')
+```
+
+```{r}
+indexs = usable_indexs[[which(smoothing_windows==100)]]
+prediction = predictions[[which(smoothing_windows==100)]]
+target = test_data$awake_angle[indexs]*(180/pi) # Convert awake indexs to degrees
+rmse=sum(sqrt(angleDiff(prediction,target)^2))/length(prediction)
+```
+
+```{r include=TRUE}
+ggplot(data=data.frame(error=angleDiff(target,prediction))) + geom_histogram(aes(x=error, y=..density..), color='white', binwidth=9)
+```
+
+## Raw target plots
+
+```{r}
+prediction_df = data.frame(time=1:length(prediction), angle=prediction, type='prediction')
+
+bin_size = 9
+target_bin_index = ceiling(target/bin_size)
+target_binned = (target_bin_index-1)*bin_size + bin_size/2
+target_binned_df = data.frame(time=1:length(target), angle=target_binned, type='target')
+
+df_binned = rbind(prediction_df, target_binned_df)
+```
+
+```{r include=TRUE}
+ggplot() + geom_point(data=prediction_df, aes(x=time, y=angle),color='black', alpha=0.5) +
+    geom_point(data=target_binned_df, aes(x=time, y=angle), color='blue', alpha=0.2, size=0.5) + coord_polar(theta='y')
+```
+```{r include=TRUE}
+ggplot(data=df_binned) + geom_point(aes(x=time, y=angle, color=type))
+```
+
+## Confusion matrix
+
+```{r include=TRUE}
+conf_mat = table(prediction=prediction_df$angle, target=target_binned)
+conf_mat = as.data.frame(sweep(conf_mat, 1, rowSums(conf_mat), '/')) # Normalize by row
+
+# Due to table() angles are factors. Thus taking as.double converts them to the bin index
+ggplot(data=conf_mat) + 
+    geom_raster(aes(x=as.double(prediction), y=as.double(target), fill=Freq)) +
+    scale_fill_distiller(palette='Spectral')
+```
+
+```{r include=TRUE}
+rmse = rep(0,length(smoothing_windows))
+for(i in 1:length(smoothing_windows)){
+    target = test_data$awake_angle[usable_indexs[[i]]]*(180/pi)
+    rmse[i]=sum(sqrt(angleDiff(predictions[[i]],target)^2))/length(prediction)
+}
+ggplot(data=data.frame(window=smoothing_windows, rmse=rmse)) +
+    geom_point(aes(x=window, y=rmse))
+```

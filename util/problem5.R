@@ -31,20 +31,6 @@ train_test_split = function(data){
                 test_data = test_data))
 }
 
-
-# Returns the reference population vector based on an input angle
-calculateReferencePopulationVector = function(angle, tuning_curves){
-    
-    #Place the input angle into the corresponding bin
-    bin_length = 2*min(tuning_curves$angle_bins)
-    bin_index = ceiling(angle/bin_length)
-    binned_input_angle = tuning_curves$angle_bin[bin_index]
-    
-    #Fetch the reference population vector for the binned angle
-    reference_vector = tuning_curves[tuning_curves$angle_bin == binned_input_angle,]$firing_rate
-    return(reference_vector)
-}
-
 # Calculates the momentary population vector for every timestamp
 calculateMomentaryPopulationVector = function(data, smoothing_window=100){
     num_cells = length(data$cellnames)
@@ -58,7 +44,12 @@ calculateMomentaryPopulationVector = function(data, smoothing_window=100){
     for(i in 1:num_cells){
        activity_matrix[i,data$spiketimes[[data$cellnames[[i]]]]] = 1
     }
-
+    
+    # non_zero_indexs = which(activity_matrix==1,arr.ind=TRUE)
+    # activity_matrix = sparseMatrix(i=non_zero_indexs[,1],
+    #                                j=non_zero_indexs[,2],
+    #                                x=activity_matrix)
+    
     # Create matrix where we will apply the smoothing window
     momentary_population_matrix = activity_matrix
 
@@ -81,9 +72,24 @@ calculateMomentaryPopulationVector = function(data, smoothing_window=100){
                 usable_indexs = usable_indexs))
 }
 
+# Returns the reference population vector based on an input angle
+calculateReferencePopulationVector = function(angle, tuning_curves){
+    
+    #Place the input angle into the corresponding bin
+    bin_length = 2*min(tuning_curves$angle_bins)
+    bin_index = ceiling(angle/bin_length)
+    binned_input_angle = tuning_curves$angle_bin[bin_index]
+    
+    #Fetch the reference population vector for the binned angle
+    reference_vector = tuning_curves[tuning_curves$angle_bin == binned_input_angle,]$firing_rate
+    return(reference_vector)
+}
+
 # Finds the angle with the lowest pearson coefficient
 findHighestCorAngle = function(momentary_population, tuning_curves){
     best_correlation = -1
+    
+    
     for(angle in unique(tuning_curves$angle_bins)){
         reference_vector = calculateReferencePopulationVector(angle, tuning_curves)
         correlation = cor(momentary_population, reference_vector, use="pairwise.complete.obs", method="pearson")
