@@ -25,7 +25,7 @@ The goal of this project was to look for a relation between neuron firing and th
 
 * Session 131213 on mouse 24
 * Session 140124 on mouse 25
-* Session 140318 on mouse 38
+* Session 140318 on mouse 28
 
 The mouse head angle was binned into 40 bins giving bins of length 9. To find neurons with a relation the binned angle was plotted against the corresponding average firing rate. Then, manually, any neurons that seemed to have a bump in activity that clearly stood out among the firing activity noise was noted. An example of the plots used to find these follows.
 

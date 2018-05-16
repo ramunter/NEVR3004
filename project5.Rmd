@@ -2,79 +2,134 @@
 title: "Decoding and information theory"
 author: "Rasmus Munter"
 date: "May 11, 2018"
-output: pdf_document
+output:
+    pdf_document:
+        fig_caption: true
+        fig_height: 3
 ---
-```{r include=FALSE}
-knitr::opts_chunk$set(include=FALSE, echo=FALSE, cache=TRUE)
-library(ggplot2)
-library(knitr)
 
+```{r include=FALSE}
+knitr::opts_chunk$set(include=FALSE, echo=FALSE, cache=TRUE, eval.after = "fig.cap")
+
+library(ggplot2)
+library(ggpubr)
+library(dplyr)
+library(knitr)
 source('./util/problem5.R')
 
-knit_child('project2.Rmd', options=list(include=FALSE))
+theme_set(theme_bw())
+
+# For knitting only
+# knit_child('project2.Rmd', options=list(include=FALSE))
 ```
+
+## Abstract - don't include this header in actual essay
+
+
+
+## Introduction
+
+Neuron decoding is trying to calculate the stimulus that caused a certain measured response. The complexity of this issues varies widly with both the method used to decode and the response that is being decoded. In an effort to keep things simple this paper attempts to decode head direction(HD) cells in mice. HD cells in mice are neurons where the firing rate is directly related to the compass heading of the mouse, forming a clear tuning curve. This paper applies and analysizes the nearest neighbour method on a population of neurons in areas of the mouse brain known to contain HD cells.
+
+## Methods
+
+The cell population recordings were found from *Paper here* and consits of measurements from the thalamus and post subiculum. Due to time and computing power constraints the data was constrained to recordings from mouse 28 in session 14038 consisting of 80 cells. The contious head angle data, which can be viewed as the stimulus, was discretized into 40 non-overlapping 9 degree bins. The session was then was split into two unshuffled halves, with the first half as the training set and the other half as the test set.
+
+Reference vectors for each of the 40 angle bins was calculated by calculating the average firing rate of each neuron at each angle bin using only the training set. The population vector was then calculated on the test set by using a sliding 100 ms smoothing window. Finally population vectors for timestamps that had no angle data were removed before performing predictions. This left *89000* population vectors to perform predictions on.
+
+The predictions were calculated using the nearest neighbour algorithm between a single population vector and the 40 reference vectors. Pairwise Pearson correlation was used as the distance measure.
+
+## Results
 
 ```{r}
 #Split the dataset
-data_split = train_test_split(data3)
-training_data = data_split$training_data
-test_data = data_split$test_data
-```
+# data_split = train_test_split(data3)
+# training_data = data_split$training_data
+# test_data = data_split$test_data
 
-
-
-```{r}
 # From earlier runs, look at rough draft to see how this was run
-smoothing_windows = c(5, 10, 50, 100, 150, 200)
+smoothing_windows = c(5, 10, 50, 100)#, 150, 200, 250, 500)
 load('usable_indexs.RData')
 load('predictions.RData')
-```
-
-```{r}
+load('momentaryVectors.RData')
+# Data from smoothing_window 100
 indexs = usable_indexs[[which(smoothing_windows==100)]]
 prediction = predictions[[which(smoothing_windows==100)]]
-target = test_data$awake_angle[indexs]*(180/pi) # Convert awake indexs to degrees
-rmse=sum(sqrt(angleDiff(prediction,target)^2))/length(prediction)
 ```
 
-```{r include=TRUE}
-ggplot(data=data.frame(error=angleDiff(target,prediction))) + geom_histogram(aes(x=error, y=..density..), color='white', binwidth=9)
-```
+## Model Output
 
-## Raw target plots
+```{r "Target and prediction dataframe for plotting"}
 
-```{r}
-prediction_df = data.frame(time=1:length(prediction), angle=prediction, type='prediction')
-
+#Create target
 bin_size = 9
+target = test_data$awake_angle[indexs]*(180/pi) # Convert awake indexs to degrees
+
+#Bin target
 target_bin_index = ceiling(target/bin_size)
 target_binned = (target_bin_index-1)*bin_size + bin_size/2
 target_binned_df = data.frame(time=1:length(target), angle=target_binned, type='target')
 
+#Predictions
+prediction_df = data.frame(time=1:length(prediction), angle=prediction, type='prediction')
+
 df_binned = rbind(prediction_df, target_binned_df)
 ```
 
-```{r include=TRUE}
-ggplot() + geom_point(data=prediction_df, aes(x=time, y=angle),color='black', alpha=0.5) +
-    geom_point(data=target_binned_df, aes(x=time, y=angle), color='blue', alpha=0.2, size=0.5) + coord_polar(theta='y')
-```
-```{r include=TRUE}
-ggplot(data=df_binned) + geom_point(aes(x=time, y=angle, color=type))
+Figure \ref{decoding} shows samples of the decoders output versus the true head angle. In general the prediction was a few bins off the true angle, with a few exceptions such as in \ref{decoding}B. 
+
+```{r include=TRUE, fig.cap="\\label{decoding} WIP"}
+df_sample_plot = df_binned %>% mutate(timeperiod = ceiling(time/1000)) %>% filter(timeperiod==2 | timeperiod == 39)
+
+ggplot(data=df_sample_plot) +
+    geom_point(aes(x=time, y=angle, color=type),fill='white', shape=21, alpha=1) + 
+    facet_wrap(~timeperiod, scale="free_x") +
+    scale_color_brewer(type='qual', palette=7) +
+    coord_cartesian(ylim=c(0,360)) + 
+    theme(strip.background = element_blank(),
+                strip.text.x = element_blank(),
+                axis.ticks.x = element_blank(),
+                axis.text.x = element_blank())
+
 ```
 
-## Confusion matrix
+### Model perfomance
 
-```{r include=TRUE}
-conf_mat = table(prediction=prediction_df$angle, target=target_binned)
-conf_mat = as.data.frame(sweep(conf_mat, 1, rowSums(conf_mat), '/')) # Normalize by row
+Running the described method on the test set resulted in an root mean square error(RMSE) of *20* and an accuracy of 50%. 
+
+```{r "prediction metrics"}
+rmse=sum(sqrt(angleDiff(prediction,target)^2))/length(prediction)
+
+confusion_mat = table(prediction=prediction_df$angle, target=target_binned)
+confusion_mat = as.data.frame(sweep(confusion_mat, 1, rowSums(confusion_mat), '/')) # Normalize by row
+
+accuracy = sum(angleDiff(prediction,target)<0.1)/length(prediction)
+```
+
+The RMSE is relatively high. In figure \ref{confMat}a the distribution shows that this is in general due to a lot of predictions 1-3 bins off the target value rather than a few extreme errors. The confusion matrix in \ref{confMat}b shows that there are cases where the model frequently predicts a very wrong angle.
+
+```{r include=TRUE, fig.cap=caption}
+p1 = ggplot(data=data.frame(error=angleDiff(target,prediction))) + 
+    geom_histogram(aes(x=error, y=..density..), color='white', binwidth=9)
 
 # Due to table() angles are factors. Thus taking as.double converts them to the bin index
-ggplot(data=conf_mat) + 
+p2 = ggplot(data=confusion_mat) + 
     geom_raster(aes(x=as.double(prediction), y=as.double(target), fill=Freq)) +
-    scale_fill_distiller(palette='Spectral')
+    scale_fill_distiller(palette='Spectral') +
+    theme(legend.position="bottom") +
+    coord_fixed() + 
+    labs(x="Predicted Bin", y="True bin")
+
+
+ggarrange(p1,p2,nrow=1,ncol=2, labels="auto")
+caption = "\\label{confMat} Visualization of model performance on test set. Figure A: The distribution of prediction error. Figure B: Confusion matrix"
 ```
 
-```{r include=TRUE}
+### Smoothing window size
+
+The choice of smoothing window effects the model as it removes the temporal information of when the timespikes occured but decreases the noise of the firing rate. The effect of changing this window can give insight into if head angle information is coded in the spike timing. Figure \ref{RMSE}A shows the change in the RMSE of the model using different sized smoothing windows. As the smoothing window increases, the RMSE decreases. This suggests that the temporal relation between spikes is not important for encoding as losing this information when increasing window size should increase error. However, this plot alone is not enough to rule out that the decrease in noise outweighs the information lost. Figure \ref{RMSE}B shows the change in information rate with bin size. Here
+
+```{r include=TRUE, fig.cap=caption}
 rmse = rep(0,length(smoothing_windows))
 for(i in 1:length(smoothing_windows)){
     target = test_data$awake_angle[usable_indexs[[i]]]*(180/pi)
@@ -82,4 +137,23 @@ for(i in 1:length(smoothing_windows)){
 }
 ggplot(data=data.frame(window=smoothing_windows, rmse=rmse)) +
     geom_point(aes(x=window, y=rmse))
+caption="\\label{RMSE} Visualization of model performance on test set."
 ```
+
+```{r}
+info = rep(0,length(smoothing_windows))
+for(i in 1:length(smoothing_windows)){
+    target = test_data$awake_angle[momentaryVectors[[i]]$usable_indexs]*(180/pi)
+    target_bin_index = ceiling(target/bin_size)
+    target_binned = (target_bin_index-1)*bin_size + bin_size/2
+    target_binned_df = data.frame(time=1:length(target), angle=target_binned, type='target')
+    info[i]=calculateMutualInformation(target_binned, momentaryVectors[[i]]$momentary_population_matrix, 45)
+}
+ggplot(data=data.frame(window=smoothing_windows, info=info)) +
+    geom_point(aes(x=window, y=info))
+
+# test=calculateMutualInformation(target_binned, momentaryVectors$'100'$momentary_population_matrix, 1)
+```
+## Discussion
+
+

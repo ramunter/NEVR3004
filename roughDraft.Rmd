@@ -301,25 +301,28 @@ test_data = data_split$test_data
 ```
 
 ```{r}
-smoothing_window = 100
+smoothing_windows = c(5, 10,50, 100)#, 150, 200, 250, 500)
 
 # Tuning curves based on training_data
-tuning_curves = createTuningCurveDataFrame(training_data)
+tuning_curves = createTuningCurveDataFrame(training_data, min_firing_rate=Inf)
 
 # All test data, time by column, cell by row
-result = calculateMomentaryPopulationVector(test_data, smoothing_window)
-momentary_population_matrix = result$momentary_population_matrix
-usable_indexs = result$usable_indexs
+result = calculateMomentaryPopulationVectors(test_data, smoothing_windows)
+# momentary_population_matrix = result$momentary_population_matrix
+# usable_indexs = result$usable_indexs
 ```
 
 ```{r}
 prediction = rep(0, length(usable_indexs))
+before = proc.time()
 for(i in 1:length(prediction)){
     prediction[i] = findHighestCorAngle(momentary_population_matrix[,i], tuning_curves)
-    if(i%%10000 == 0){
-        print(i)
-    }
 }
+after = proc.time()
+for_loop = after-before
+
+p500 = prediction
+ui500 = usable_indexs
 ```
 
 ```{r}
@@ -366,7 +369,7 @@ ggplot(data=conf_mat) + geom_raster(aes(x=prediction, y=target_binned, fill=Freq
 ```{r}
 predictions = list()
 usable_indexs = list()
-smoothing_windows = c(5, 10, 50, 100, 150, 200)
+smoothing_windows = c(5, 10, 50, 100, 150, 200, 250, 500)
 
 for(smoothing_window in smoothing_windows){
     print(paste("Smoothing window",smoothing_window))

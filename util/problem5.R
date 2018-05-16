@@ -31,8 +31,28 @@ train_test_split = function(data){
                 test_data = test_data))
 }
 
+# Removes indexs and values where we dont have angle data 
+processMomentaryPopulationVector = function(momentary_population_matrix, smoothing_window, total_time){
+    
+    # Convert to firing rate
+    momentary_population_matrix = momentary_population_matrix/(2*smoothing_window/1000)
+    
+    # Remove bins that are smaller than 200ms or where we don't have the relevant
+    # angle data for the mouse
+    usable_indexs = smoothing_window:(total_time-smoothing_window)
+    usable_indexs = usable_indexs[which(!is.nan(test_data$awake_angle[usable_indexs]))]
+    
+    momentary_population_matrix = as.matrix(momentary_population_matrix[,usable_indexs])
+    
+    return(list(usable_indexs=usable_indexs,
+                momentary_population_matrix=momentary_population_matrix))
+}
+
 # Calculates the momentary population vector for every timestamp
-calculateMomentaryPopulationVector = function(data, smoothing_window=100){
+calculateMomentaryPopulationVectors = function(data, smoothing_windows){
+    
+    momentary_population_matrix_list = list()
+    
     num_cells = length(data$cellnames)
     total_time = length(data$awake_angle)
     
@@ -45,31 +65,27 @@ calculateMomentaryPopulationVector = function(data, smoothing_window=100){
        activity_matrix[i,data$spiketimes[[data$cellnames[[i]]]]] = 1
     }
     
-    # non_zero_indexs = which(activity_matrix==1,arr.ind=TRUE)
-    # activity_matrix = sparseMatrix(i=non_zero_indexs[,1],
-    #                                j=non_zero_indexs[,2],
-    #                                x=activity_matrix)
+    activity_matrix = Matrix(activity_matrix, sparse=TRUE)
     
     # Create matrix where we will apply the smoothing window
     momentary_population_matrix = activity_matrix
-
-    for(i in 1:smoothing_window){
-        momentary_population_matrix = momentary_population_matrix + 
-            cbind(matrix(0, nrow=num_cells, ncol=i), activity_matrix[,1:(total_time-i)]) + 
-            cbind(activity_matrix[,(i+1):total_time], matrix(0, nrow=num_cells, ncol=i))
+    
+    left = activity_matrix
+    right = activity_matrix
+    zero_vec = Matrix(0, nrow=num_cells, ncol=1, sparse=TRUE)
+    
+    for(i in 1:max(smoothing_windows)){
+        left = cbind(zero_vec,left[,-dim(left)[2]])
+        right = cbind(right[,-1], zero_vec)
+        momentary_population_matrix = momentary_population_matrix + left + right
+        if(i %in% smoothing_windows){
+            temp_result = processMomentaryPopulationVector(momentary_population_matrix, i, total_time)
+            momentary_population_matrix_list = cbind(momentary_population_matrix_list, list(temp_result))
+        }
     }
-    momentary_population_matrix = momentary_population_matrix/(2*smoothing_window/1000)
-    
-    # Remove bins that are smaller than 200ms or where we don't have the relevant
-    # angle data for the mouse
-    
-    usable_indexs = smoothing_window:(total_time-smoothing_window)
-    usable_indexs = usable_indexs[which(!is.nan(test_data$awake_angle[usable_indexs]))]
-    
-    momentary_population_matrix = momentary_population_matrix[,usable_indexs]
-
-    return(list(momentary_population_matrix = momentary_population_matrix,
-                usable_indexs = usable_indexs))
+    names(momentary_population_matrix_list) = smoothing_windows
+    colnames(momentary_population_matrix_list) = smoothing_windows
+    return(momentary_population_matrix_list)
 }
 
 # Returns the reference population vector based on an input angle
@@ -87,17 +103,12 @@ calculateReferencePopulationVector = function(angle, tuning_curves){
 
 # Finds the angle with the lowest pearson coefficient
 findHighestCorAngle = function(momentary_population, tuning_curves){
-    best_correlation = -1
+
+    population_vectors = lapply(unique(tuning_curve$angle_bins), calculateReferencePopulationVector, tuning_curves=tuning_curves)
+    correlations = lapply(population_vectors, cor, momentary_population, use="pairwise.complete.obs", method="pearson")
+
+    best_angle=unique(tuning_curves$angle_bins)[which.max(correlations)]
     
-    
-    for(angle in unique(tuning_curves$angle_bins)){
-        reference_vector = calculateReferencePopulationVector(angle, tuning_curves)
-        correlation = cor(momentary_population, reference_vector, use="pairwise.complete.obs", method="pearson")
-        if(correlation > best_correlation){
-            best_correlation = correlation
-            best_angle = angle
-        }
-    }
     return(best_angle)
 }
 
@@ -106,4 +117,61 @@ angleDiff = function(angle1, angle2){
     angle2 = pi/180*angle2
     diff = abs(atan2(sin(angle1-angle2), cos(angle1-angle2)))
     return(diff*180/pi)
+}
+
+
+## Mutual information
+
+calculateMutualInformation = function(binned_awake_angles, momentary_population_matrix, cellnumber){
+        
+    response = momentary_population_matrix[cellnumber,]
+    
+    # Convert from firing rate to number of spikes and transpose
+    response = response#*(200/1000)
+    
+    ## I tried implementing this myself first, the trends look correct, but my values are huge,
+    ## probably some normalization issues.
+    # stimulus_dist = estimateDistribution(binned_awake_angles)
+    # p_conditional_response = calculateConditionalResponse(response, binned_awake_angles)
+    # response_dist = estimateDistribution(response)
+    # 
+    # information = 0
+    # for(s in 1:length(stimulus_dist)){
+    #     for(r in 1:length(response_dist)){
+    #         log_term = log2(p_conditional_response[r,s]/response_dist[r])
+    #         if(is.infinite(log_term)){
+    #             next
+    #         }
+    #         information = information + stimulus_dist[s]*p_conditional_response[r,s]*log_term
+    #         # print(paste('i', s, 'j', r))
+    #         # print(information)
+    # 
+    #     }
+    # }
+    count_stim = freqs.empirical(binned_awake_angles)
+    count_resp = freqs.empirical(response)
+    return(mi.empirical(table(count_stim,count_resp)))
+    # return(information)
+    #sum(stimulus_dist*p_conditional_response*log2(p_conditional_response/response_dist))
+    
+}
+
+# I.e P(r|s)
+calculateConditionalResponse = function(response, binned_awake_angles){
+
+    # Stimulus response dataframe
+    df = data.frame(stimulus=binned_awake_angles, response=as.factor(response))
+    result = rep(0,length(unique(response)))
+    for(stim in unique(df$stimulus)){
+        filtered = df %>% filter(stimulus==stim) %>% select(response)
+        response_given_stim = as.data.frame(table(filtered))
+        result = cbind(result, response_given_stim$Freq)
+    }
+    result = result[,-1]
+    return(result)
+}
+
+# Plug in principle
+estimateDistribution = function(data){
+    return(as.data.frame(table(data))$Freq/length(data))
 }

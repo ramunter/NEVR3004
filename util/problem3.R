@@ -42,8 +42,7 @@ calculateCoefficentOfVariation = function(cellname, data, tuning_curve){
     # Compute coefficient of variation
     for(j in 1:length(tuning_curve$angle_bins)){
         binned_isi = na.omit(df_isi[df_isi$index == j,])$isi
-        if(binned_isi_count[j] > 50 && mean(binned_isi)>1 ){
-            
+        if(binned_isi_count[j] > 50){
             CV[j] = sd(binned_isi)/mean(binned_isi) # Coefficient of variation
         }
     }

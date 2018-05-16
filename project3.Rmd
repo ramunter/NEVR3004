@@ -45,27 +45,40 @@ ggplot(data=all_cells, aes(x=angle_bins)) +
     geom_line(aes(y=firing_rate)) +
     geom_point(aes(y=firing_rate, fill=CV), size=2, color='black',shape=21) +
     scale_fill_distiller(palette='RdPu', na.value='NA') +
-    scale_color_continuous(na.value='NA') +
-    theme(axis.ticks.x = element_blank(), axis.ticks.y = element_blank(),
-          axis.text.x = element_blank(), axis.text.y = element_blank())
+    scale_color_continuous(na.value='NA')
+    # theme(axis.ticks.x = element_blank(), axis.ticks.y = element_blank(),
+    #       axis.text.x = element_blank(), axis.text.y = element_blank())
 ```
-```{r include=TRUE, echo=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
 cellnames_good_cv = c('T3C4','T9C10','T9C12')
 cells_good_cv = all_cells[all_cells$cellname %in% cellnames_good_cv,]
-p1=ggplot(data=cells_good_cv, aes(x=angle_bins)) + 
-    facet_wrap( ~ cellname, ncol=3, scale='free_y') +
-    geom_line(aes(y=firing_rate)) +
-    geom_point(aes(y=firing_rate, fill=CV), size=3, stroke=0.7, color='black', shape=21) +
-    scale_fill_distiller(type='div', palette=4, na.value='NA')
-    
-p2=ggplot(data=cells_good_cv, aes(x=angle_bins)) + 
-    facet_wrap( ~ cellname, ncol=3) +
-    geom_point(aes(y=CV, fill=CV), size=2, stroke=0.7, color='black', shape=21) +
-    scale_fill_distiller(type='div', palette=4, na.value='NA') + 
-    theme(strip.text.x = element_blank(), strip.background = element_blank())
 
-ggarrange(p1,p2, ncol=1, nrow=2)
-    
+p1 = ggplot(data=(all_cells %>% filter(cellname==cellnames_good_cv[1]))) +
+        geom_line(aes(x=angle_bins, y=firing_rate)) +
+        geom_line(aes(x=angle_bins, y=CV*5), color='blue') +
+        scale_y_continuous(sec.axis = sec_axis(~./5))
+p2 = ggplot(data=(all_cells %>% filter(cellname==cellnames_good_cv[2]))) +
+        geom_line(aes(x=angle_bins, y=firing_rate)) +
+        geom_line(aes(x=angle_bins, y=CV*90), color='blue') +
+        scale_y_continuous(sec.axis = sec_axis(~./90))
+p3 = ggplot(data=(all_cells %>% filter(cellname==cellnames_good_cv[3]))) +
+        geom_line(aes(x=angle_bins, y=firing_rate)) +
+        geom_line(aes(x=angle_bins, y=CV*125), color='blue') +
+        scale_y_continuous(sec.axis = sec_axis(~./125))
+
+# p1=ggplot(data=cells_good_cv, aes(x=angle_bins)) + 
+#     facet_wrap( ~ cellname, ncol=3, scale='free_y') +
+#     geom_line(aes(y=firing_rate)) +
+#     geom_point(aes(y=firing_rate, fill=CV), size=3, stroke=0.7, color='black', shape=21) +
+#     scale_fill_distiller(type='div', palette=4, na.value='NA')
+#     
+# p2=ggplot(data=cells_good_cv, aes(x=angle_bins)) + 
+#     facet_wrap( ~ cellname, ncol=3) +
+#     geom_line(aes(y=CV, fill=CV), size=2, stroke=0.7, color='black', shape=21) +
+#     scale_fill_distiller(type='div', palette=4, na.value='NA') + 
+#     theme(strip.text.x = element_blank(), strip.background = element_blank())
+
+ggarrange(p1,p2,p3, ncol=1, nrow=3)
 ```
 
 Due to the size of the bins and the large amount of $NaN$ values in the angle dataset there were relatively few bins with enough measurements to calculate a trustworthy CV. The three cells that had more than 2 CV values are plotted. The data isn't clean but the general trend is that at the peaks the CV is lowest. This indicates that the variability in the firing rate is lower at the peak of the tuning curve for cortex cells. We do not have enough data to analyize the change in CV across the tuning curve.
