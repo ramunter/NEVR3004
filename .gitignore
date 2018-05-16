@@ -3,5 +3,5 @@ Mouse*/
 *_cache/
 *_files/
 .Rproj.user
-.RData
+*.RData
 
