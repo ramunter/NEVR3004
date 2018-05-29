@@ -2,14 +2,30 @@
 title: "Firing rate adaptation"
 author: "Rasmus Munter"
 date: "May 11, 2018"
-output: pdf_document
+output:
+    pdf_document:
+        fig_caption: true
+        fig_height: 4
+        fig_width: 5.5
+header-includes:
+    - \usepackage{float}
+    - \usepackage{caption}
 ---
+\captionsetup{width=5.5in}
 ```{r include=FALSE}
-library('knitr')
-knit_child('project2.Rmd')
+
+library(ggplot2)
+library(dplyr)
+library(ggpubr)
+library(knitr)
+
+knit_child('project1.Rmd', options=list(include=FALSE))
+load('./all_cells.RData')
+
+theme_set(theme_bw())
 ```
 
-Firing rate adaption in heading tuning cells in the thalamus and subiculum was investigated. Firing rate adaptation is the tedency for neurons firing activity to drop if it has been in a period of high activity. According to earlier research head cells do not show firing rate adaptation. To test this the activity data of the recorded neurons was split into three equal datasets based on the recent activity. The firing rate for each neuron was then calculated per dataset and compared.
+Firing rate adaption in head direction cells in the thalamus and subiculum in mice was investigated. Firing rate adaptation is the tedency for neurons firing activity to drop if it has been in a period of high activity. According to earlier research head cells do not show firing rate adaptation. To test this the activity data of the recorded neurons was split into three equal datasets based on the recent activity which can be seen in figure \ref{thresholds}. The firing rate for each neuron was then calculated per threshold and compared.
 
 ```{r}
 source('./util/problem4.R')
@@ -34,16 +50,21 @@ for(cell in unique(all_cells$cellname[all_cells$mouse==datasource[3]])){
     firing_rate_df = rbind(firing_rate_df, result$firing_rate_df)
 }
 ```
-```{r echo=FALSE, include=TRUE}
+```{r echo=FALSE, include=TRUE, fig.cap=caption}
 ggplot(data=activity_df) +
-    geom_histogram(aes(x=activity, y=..density.., fill=category),color='white', size=0.2, binwidth=1) +
+    geom_histogram(aes(x=activity, y=..density.., fill=category), alpha=0.8, color='white', size=0.2, binwidth=1) +
     scale_fill_brewer(type='qual', palette=1) +
-    facet_wrap(~cellname,ncol = 2, scale="free_y")
+    facet_wrap(~cellname,ncol = 3, scale="free")
+
+caption="\\label{thresholds}\\textbf{Neuron activity split into 3 groups by activity level.}"
 ```
-```{r echo=FALSE, include=TRUE}
-ggplot(data=firing_rate_df) + geom_line(aes(x=angle_bin, y=firing_rate, color=category)) + 
+```{r echo=FALSE, include=TRUE, fig.cap=caption}
+ggplot(data=firing_rate_df) + geom_line(aes(x=angle_bin, y=firing_rate, color=category), alpha=1) + 
     scale_color_brewer(type='qual', palette=1) +
-    facet_wrap(~cellname,ncol = 2, scale="free_y") 
+    facet_wrap(~cellname,ncol = 4, scale="free") + 
+    labs(x='Angle', y='Firing rate')
+
+caption="\\label{firingrate}\\textbf{Firing rate for 10 head direction cells at different activity levels.} In all cells the firing rate is highest in a period of high activity which is the opposite of what one would expect if there were firing rate adaptation."
 ```
 
-Based on figure blah there does not seem to be firing rate adaption as the high activity category tends to have higher or equal firing rate than the low activity category. 
+Based on figure \ref{firingrate} there does not seem to be firing rate adaption as the high activity category is consistently much higher than the firing rate at other activity levels.

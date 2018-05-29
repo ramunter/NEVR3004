@@ -2,17 +2,33 @@
 title: "How noisy is it?"
 author: "Rasmus Munter"
 date: "May 11, 2018"
-output: pdf_document
+output:
+    pdf_document:
+        fig_caption: true
+        fig_height: 4
+        fig_width: 5.5
+header-includes:
+    - \usepackage{float}
+    - \usepackage{caption}
 ---
+\captionsetup{width=5.5in}
 
 ```{r include=FALSE}
-library('knitr')
+
+library(ggplot2)
+library(dplyr)
 library(ggpubr)
-knit_child('project2.Rmd')
+library(knitr)
+
+knit_child('project1.Rmd', options=list(include=FALSE))
+load('./all_cells.RData')
+
 theme_set(theme_bw())
 ```
 
 ```{r}
+## Calculate coefficient of variation for all cells
+
 source('./util/problem3.R')
 
 all_cells$CV = NaN
@@ -37,66 +53,61 @@ for(cell in unique(all_cells$cellname[all_cells$mouse==datasource[3]])){
 }
 ```
 
-The coefficeint of variation is the ratio of variation of the data to its mean. The more noisy the data the higher the CV should be as the data should vary more. Calculating the CV of the interspike interval at different angle bins shows the level of variation in the firing rate.
+The coefficient of variation is the ratio of variation of the data to its mean. The more noisy the data the higher the CV should be as the data should vary more. Calculating the CV of the inter spike interval at different angle bins shows the level of variation in the firing rate.
 
-```{r}
+```{r include=TRUE, fig.cap=caption}
 ggplot(data=all_cells, aes(x=angle_bins)) + 
     facet_wrap( ~ cellname, ncol=3, scale='free_y') +
     geom_line(aes(y=firing_rate)) +
-    geom_point(aes(y=firing_rate, fill=CV), size=2, color='black',shape=21) +
+    geom_point(aes(y=firing_rate, fill=CV), size=1, color='black',shape=21) +
     scale_fill_distiller(palette='RdPu', na.value='NA') +
-    scale_color_continuous(na.value='NA')
-    # theme(axis.ticks.x = element_blank(), axis.ticks.y = element_blank(),
-    #       axis.text.x = element_blank(), axis.text.y = element_blank())
+    scale_color_continuous(na.value='NA') +
+    labs(x='Angle bins', y='Firing Rate') +
+    theme(axis.ticks.x = element_blank(), axis.ticks.y = element_blank(),
+          axis.text.x = element_blank(), axis.text.y = element_blank(),
+          strip.text.x = element_text(size = 4))
+caption="\\label{CVAll}\\textbf{Tuning curves for HD cells with the coefficient of variation:}  The line of best fit indicates that the gaussian curve is a better fit."
 ```
-```{r echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, include=TRUE, fig.cap=caption}
 cellnames_good_cv = c('T3C4','T9C10','T9C12')
 cells_good_cv = all_cells[all_cells$cellname %in% cellnames_good_cv,]
 
 p1 = ggplot(data=(all_cells %>% filter(cellname==cellnames_good_cv[1]))) +
         geom_line(aes(x=angle_bins, y=firing_rate)) +
         geom_line(aes(x=angle_bins, y=CV*5), color='blue') +
-        scale_y_continuous(sec.axis = sec_axis(~./5))
+        scale_y_continuous(sec.axis = sec_axis(~./5)) + 
+        labs(title='T3C4') + 
+        theme(axis.title.x=element_blank(), axis.title.y=element_blank())
+
 p2 = ggplot(data=(all_cells %>% filter(cellname==cellnames_good_cv[2]))) +
         geom_line(aes(x=angle_bins, y=firing_rate)) +
         geom_line(aes(x=angle_bins, y=CV*90), color='blue') +
-        scale_y_continuous(sec.axis = sec_axis(~./90))
+        scale_y_continuous(sec.axis = sec_axis(~./90)) + 
+        labs(title='T9C10') + 
+        theme(axis.title.x=element_blank(), axis.title.y=element_blank())
+
 p3 = ggplot(data=(all_cells %>% filter(cellname==cellnames_good_cv[3]))) +
         geom_line(aes(x=angle_bins, y=firing_rate)) +
         geom_line(aes(x=angle_bins, y=CV*125), color='blue') +
-        scale_y_continuous(sec.axis = sec_axis(~./125))
+        scale_y_continuous(sec.axis = sec_axis(~./125)) + 
+        labs(title='T9C12') + 
+        theme(axis.title.x=element_blank(), axis.title.y=element_blank())
 
-# p1=ggplot(data=cells_good_cv, aes(x=angle_bins)) + 
-#     facet_wrap( ~ cellname, ncol=3, scale='free_y') +
-#     geom_line(aes(y=firing_rate)) +
-#     geom_point(aes(y=firing_rate, fill=CV), size=3, stroke=0.7, color='black', shape=21) +
-#     scale_fill_distiller(type='div', palette=4, na.value='NA')
-#     
-# p2=ggplot(data=cells_good_cv, aes(x=angle_bins)) + 
-#     facet_wrap( ~ cellname, ncol=3) +
-#     geom_line(aes(y=CV, fill=CV), size=2, stroke=0.7, color='black', shape=21) +
-#     scale_fill_distiller(type='div', palette=4, na.value='NA') + 
-#     theme(strip.text.x = element_blank(), strip.background = element_blank())
-
-ggarrange(p1,p2,p3, ncol=1, nrow=3)
+p = ggarrange(p1,p2,p3, ncol=1, nrow=3, labels="AUTO")
+annotate_figure(p,
+                bottom = text_grob("Angle (degrees)"),
+                left = text_grob("Firing rate (Spikes/s)", rot = 90),
+                right = text_grob("CV", rot=-90)
+                )
+caption="\\label{CVBest}\\textbf{Interspike interval CV plotted with the corresponding tuning curve.} A: Cell from the thalamus. The CV is less than 1 indicating a not completely random process. However there are too few datapoints to draw any further conclusions. B: Cell from the cortex. A clear trend of a lower CV at the peak of the tuning curve. C: Cell from the cortex. More noisy than B, but still some trend indicating a lower CV at the peak of the tuning curve."
 ```
 
-Due to the size of the bins and the large amount of $NaN$ values in the angle dataset there were relatively few bins with enough measurements to calculate a trustworthy CV. The three cells that had more than 2 CV values are plotted. The data isn't clean but the general trend is that at the peaks the CV is lowest. This indicates that the variability in the firing rate is lower at the peak of the tuning curve for cortex cells. We do not have enough data to analyize the change in CV across the tuning curve.
+Due to the size of the bins and the large amount of $NaN$ values in the angle data set there were relatively few bins with enough measurements to calculate a trustworthy CV. This can be seen by all the empty circles in \ref{CVAll}. The three cells that had more than 2 CV values are plotted in more detail in \ref{CVBest}. The resulting CV values are quite noisy but the general trend is that at the tuning curve peak the CV is lowest. This indicates that the variability in the firing rate is lower at the peak of the tuning curve for cortex cells. In thalamus cells we do not have enough data to analyze the change in CV across the tuning curve.
 
-Comparing the CV in thalamus and cortex cells it can be seen that the thalamus cells that the CV varies more and is generally higher than the CV in the cortex.
+Figure \ref{isiT9C10} takes a more detailed look at cell 10 in tetrode 9 and it's ISI distribution at different angles. It shows that at the tuning curve peak the ISI distribution becomes more deterministic. However, the distribution is still quite random which is to be expected as the brains encoding is in general noisy. Further away from the peak the distribution starts to flatten out seemingly approaching a more uniform distribution.
 
-* *IS THIS HELPFUL?*
-
-```{r include=TRUE, echo=FALSE}
-ggplot(data=all_cells) + geom_boxplot(aes(x=type, y=CV))
-```
-
-* Possibility for A - simulate data and compare CV
-
-Taking a deeper look at cell 12 in tetrode 9 one can further investigate the ISI distribution. Here it can bee seen that around the peak the distribution looks similar to a poisson process. Further away from the peak the distribution flattens out and doesn't seem to match any known distributions. This suggests that the at the the temporal pattern of the firing rate has little to say and that it is the angle the neuron is encoding.
-
-```{r include=TRUE, echo=FALSE}
-cell = 'T9C12'
+```{r include=TRUE, echo=FALSE, fig.cap=caption}
+cell = 'T9C10'
 tuning_curve = all_cells[all_cells$cellname==cell,]
 
 peak_angle = tuning_curve$angle_bins[which(max(tuning_curve$firing_rate)==tuning_curve$firing_rate)]
@@ -110,9 +121,9 @@ ggplot(data=isi) +
     geom_histogram(aes(x=isi, y=..density.., fill=peak), color='white', size=0.2, binwidth=2) + 
     scale_fill_manual(values=c('black', 'navyblue')) +
     coord_cartesian(xlim = c(0,60), ylim = NULL) + 
-    theme(legend.position="none")
+    labs(x='Interspike interval', y='Density')+
+    theme(legend.position="none",  strip.text.x = element_text(size = 4))
+caption='\\label{isiT9C10}\\textbf{ISI distribution of cell T9C10 at different angles:} The cell shows a clear decrease in variabilitity in ISI around the peak. The peak angle is shown by the blue histogram.'
 ```
 
-
-
-
+In a continuous attractor model one would expect a more deterministic ISI at the peak thus these results support the learning model theory over the continuous attractor theory.

@@ -9,6 +9,7 @@ output: pdf_document
 knitr::opts_chunk$set(include=FALSE, cache=TRUE)
 library('ggplot2')
 library('directlabels')
+library(Matrix)
 source('./util/importData.R')
 datasource = c('Mouse24-131213', 'Mouse25-140124', 'Mouse28-140318')
 load_data = FALSE
@@ -301,7 +302,7 @@ test_data = data_split$test_data
 ```
 
 ```{r}
-smoothing_windows = c(5, 10,50, 100)#, 150, 200, 250, 500)
+smoothing_windows = c(10, 50, 100, 200, 300, 500)
 
 # Tuning curves based on training_data
 tuning_curves = createTuningCurveDataFrame(training_data, min_firing_rate=Inf)
@@ -368,21 +369,16 @@ ggplot(data=conf_mat) + geom_raster(aes(x=prediction, y=target_binned, fill=Freq
 
 ```{r}
 predictions = list()
-usable_indexs = list()
-smoothing_windows = c(5, 10, 50, 100, 150, 200, 250, 500)
+smoothing_windows = as.numeric(names(momentaryVectors))
 
-for(smoothing_window in smoothing_windows){
-    print(paste("Smoothing window",smoothing_window))
-    #Tuning curves based on training_data
-    tuning_curves = createTuningCurveDataFrame(training_data)
+for(j in 1:length(smoothing_windows)){
+    print(paste("Smoothing window",names(momentaryVectors)[j]))
 
     ## All test data, time by column, cell by row
-    result = calculateMomentaryPopulationVector(test_data, smoothing_window)
-    momentary_population_matrix = result$momentary_population_matrix
-    usable_index = result$usable_indexs
-    print(length(usable_index))
+    momentary_population_matrix = momentaryVectors[[j]]$momentary_population_matrix
+    usable_index = momentaryVectors[[j]]$usable_indexs
 
-    prediction = rep(0, length(usable_indexs))
+    prediction = rep(0, length(usable_index))
     for(i in 1:length(prediction)){
         prediction[i] = findHighestCorAngle(momentary_population_matrix[,i], tuning_curves)
         if(i%%10000 == 0){
@@ -390,10 +386,8 @@ for(smoothing_window in smoothing_windows){
         }
     }
     predictions = cbind(predictions, list(prediction))
-    usable_indexs = cbind(usable_indexs, list(usable_index))
 }
 colnames(predictions) = as.character(smoothing_windows)
-colnames(usable_indexs) = as.character(smoothing_windows)
 ```
 
 ```{r}

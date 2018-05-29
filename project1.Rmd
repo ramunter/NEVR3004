@@ -2,19 +2,32 @@
 title: "Neuron Specificity"
 author: "Rasmus Munter"
 date: "May 11, 2018"
-output: pdf_document
+output:
+    pdf_document:
+        fig_caption: true
+        fig_height: 3
+        fig_width: 5.5
+header-includes:
+    - \usepackage{float}
+    - \usepackage{caption}
 ---
+
+\captionsetup{width=5.5in}
 ```{r include=FALSE}
-knitr::opts_chunk$set(include=FALSE, cache=TRUE)
+knitr::opts_chunk$set(include=FALSE, echo=FALSE, cache=TRUE,
+                      out.extra = '', fig.pos = 'H', fig.align="center")
 ```
 
 ```{r}
-
 library('ggplot2')
 library('directlabels')
+library(dplyr)
+library(ggpubr)
 source('./util/importData.R')
 datasource = c('Mouse24-131213', 'Mouse25-140124', 'Mouse28-140318')
 load_data = TRUE
+
+theme_set(theme_bw())
 ```
 # Project 1
 ```{r}
@@ -27,9 +40,8 @@ The goal of this project was to look for a relation between neuron firing and th
 * Session 140124 on mouse 25
 * Session 140318 on mouse 28
 
-The mouse head angle was binned into 40 bins giving bins of length 9. To find neurons with a relation the binned angle was plotted against the corresponding average firing rate. Then, manually, any neurons that seemed to have a bump in activity that clearly stood out among the firing activity noise was noted. An example of the plots used to find these follows.
+The mouse head angle was binned into 40 bins giving bins of length 9. To find neurons with HD cell properties the firing rate at different angles was calculated for all recorded cells. Cells with minimum firing rates above 10 were filtered out. For the remaining data the binned angle was plotted against the corresponding average firing rate. Then, manually, any neurons that seemed to have a bump in activity that clearly stood out among the firing activity noise was noted. An example of the plots used to find the HD cells can be seen in figure \ref{cells}.
 
-## Visualising cells
 ```{r}
 if(load_data){
     data1 = importData(paste(".",datasource[1],datasource[1],sep="/"), 8)
@@ -37,12 +49,16 @@ if(load_data){
 }
 ```
 
-```{r echo=FALSE, include=TRUE}
+```{r echo=FALSE, include=TRUE, fig.cap=caption}
 ## Overlaying curves
 ggplot(data=tuning_curves1, aes(x=angle_bins, y=firing_rate, color=cell)) +
     facet_wrap( ~ tetrode, ncol=4, scale='free_y') +
-    geom_line() +
-    geom_dl(aes(label=cell), color='black', method=list("top.bumpup", cex=0.8))
+    geom_line() + 
+    theme(strip.text.x = element_text(size = 6)) + 
+    scale_x_continuous(breaks = 2) +#c(0,180,360)) + 
+    labs(x='Angle (degrees)', y='Firing rate (spikes/s)')
+
+caption="\\label{cells}\\textbf{Tuning curves from session 131213 on mouse 24.} Tuning curves with a minimum firing rate of less than 10 have been filtered out. T stands for tetrode number."
 
 ## ALL curves seperately
 # ggplot(data=tuning_curves1, aes(x=angle_bins, y=firing_rate, color=tetrode)) +
@@ -56,11 +72,11 @@ ggplot(data=tuning_curves1, aes(x=angle_bins, y=firing_rate, color=cell)) +
 ```{r}
 ## Store nice cells
 cortex_cellnames1 = c('T2C3','T3C4')
-cortex_cells = tuning_curves1[tuning_curves1$cellname %in% cortex_cellnames1,]
+cortex_cells = tuning_curves1 %>% filter(cellname %in% cortex_cellnames1)
 cortex_cells$mouse = datasource[1]
 
 thalamus_cellnames1 = c('T7C3','T7C4')
-thalamus_cells = tuning_curves1[tuning_curves1$cellname %in% thalamus_cellnames1,]
+thalamus_cells = tuning_curves1 %>% filter(cellname %in% thalamus_cellnames1)
 thalamus_cells$mouse = datasource[1]
 ```
 
@@ -90,13 +106,13 @@ ggplot(data=tuning_curves2, aes(x=angle_bins, y=firing_rate, color=tetrode)) +
 ```{r}
 ## Store nice cells
 cortex_cellnames2 = c('T3C3', 'T3C6', 'T4C3')
-cortex_cells2 = tuning_curves2[tuning_curves2$cellname %in% cortex_cellnames2,]
+cortex_cells2 = tuning_curves2 %>% filter(cellname %in% cortex_cellnames2)
 cortex_cells2$mouse = datasource[2]
 
 cortex_cells = rbind(cortex_cells, cortex_cells2)
 
 thalamus_cellnames2 = c('T5C3','T5C5','T5C7')
-thalamus_cells2 = tuning_curves2[tuning_curves2$cellname %in% thalamus_cellnames2,]
+thalamus_cells2 = tuning_curves2 %>% filter(cellname %in% thalamus_cellnames2)
 thalamus_cells2$mouse = datasource[2]
 thalamus_cells = rbind(thalamus_cells, thalamus_cells2)
 ```
@@ -123,23 +139,23 @@ ggplot(data=tuning_curves3, aes(x=angle_bins, y=firing_rate, color=tetrode)) +
           axis.text.x = element_blank(), axis.text.y = element_blank())
 ```
 
-
-The following cells were found to have distinct peaks.
+The cells seen in figure \ref{bestcells} are cells from the thalamus and cortex that match HD cell behaviour the most.
 
 ```{r}
 ## Store nice cells
 cortex_cellnames3 = c('T5C3', 'T5C5')
-cortex_cells3 = tuning_curves3[tuning_curves3$cellname %in% cortex_cellnames3,]
+cortex_cells3 = tuning_curves3 %>% filter(cellname %in% cortex_cellnames3)
 cortex_cells3$mouse = datasource[3]
 cortex_cells = rbind(cortex_cells, cortex_cells3)
 
 thalamus_cellnames3 = c('T8C5','T8C6','T8C7','T9C10','T9C11','T9C12','T9C13')
-thalamus_cells3 = tuning_curves3[tuning_curves3$cellname %in% thalamus_cellnames3,]
+thalamus_cells3 = tuning_curves3 %>% filter(cellname %in% thalamus_cellnames3)
 thalamus_cells3$mouse = datasource[3]
 thalamus_cells = rbind(thalamus_cells, thalamus_cells3)
 ```
 
-```{r  echo=FALSE, include=TRUE}
+```{r}
+# Not included in paper
 ggplot(data=thalamus_cells, aes(x=angle_bins, y=firing_rate, color=mouse)) + 
     facet_wrap( ~ cellname, ncol=3, scale='free_y') +
     geom_line()# + theme(legend.position="none")
@@ -148,26 +164,51 @@ ggplot(data=cortex_cells, aes(x=angle_bins, y=firing_rate, color=mouse)) +
     geom_line()
 ```
 
-In the thalamus there were relatively many neurons with distinct peaks. This is to be expected as the thalamus is an area known to have head direction cells and head direction cells are known to have distinct peaks. The subiculum is also supposed to have head direction cells but in general these had more background noise and sharper peaks.
-
-%% Page 290 in the book
-
-For use in further projects the total number of neurons had to be restricted to 10 neurons. The following neurons were chosen from the thalamus and cortex respectively.
-
-```{r  echo=FALSE, include=TRUE}
+```{r  echo=FALSE, include=TRUE, fig.cap=caption}
 thalamus_cellnames = c('T7C3', 'T5C5', 'T9C10', 'T9C11', 'T9C12')
 thalamus_cells = thalamus_cells[thalamus_cells$cellname %in% thalamus_cellnames,]
 
 cortex_cellnames = c('T2C3','T3C3','T3C4','T5C3','T3C6')
 cortex_cells = cortex_cells[cortex_cells$cellname %in% cortex_cellnames,]
 
-ggplot(data=thalamus_cells, aes(x=angle_bins, y=firing_rate, color=mouse)) + 
+p1 = ggplot(data=thalamus_cells, aes(x=angle_bins, y=firing_rate, color=mouse)) + 
     facet_wrap( ~ cellname, ncol=3, scale='free_y') +
-    geom_line() + labs(title='Thalamus cells')
-ggplot(data=cortex_cells, aes(x=angle_bins, y=firing_rate, color=mouse)) + 
+    geom_line() + labs(title='Thalamus cells') +
+    theme(axis.title.x=element_blank(), axis.title.y=element_blank()) + 
+    scale_x_continuous(breaks = c(0,180,360))
+
+p2 = ggplot(data=cortex_cells, aes(x=angle_bins, y=firing_rate, color=mouse)) + 
     facet_wrap( ~ cellname, ncol=3, scale='free_y') +
-    geom_line() + labs(title='Cortex cells')
+    geom_line() + labs(title='Cortex cells') +
+    theme(axis.title.x=element_blank(), axis.title.y=element_blank()) + 
+    scale_x_continuous(breaks = c(0,180,360))
+
+p = ggarrange(p1, p2, nrow=1, ncol=2, common.legend=TRUE)
+annotate_figure(p,
+                bottom = text_grob("Angle (degrees)"),
+                left = text_grob("Firing rate (Spikes/s)", rot = 90)
+                )
+
+caption = '\\label{bestcells}\\textbf{Selection of head cells with good properties}'
 ```
+
+In the thalamus there were relatively many neurons with distinct peaks. This is to be expected as the thalamus is an area known to have head direction cells and head direction cells are known to have distinct peaks. The subiculum is also supposed to have head direction cells but in general these had more background noise, sharper peaks and lower firing rates. 
+
+In addition to finding cells displaying the regular head cell properties there were some cells that displayed multipeak tuning which can be seen in figure \ref{multipeak}.
+
+```{r include=TRUE, fig.cap=caption}
+weird_cellnames = c('T7C4', 'T7C5')
+weird_cells = tuning_curves1 %>% filter(cellname %in% weird_cellnames) %>% mutate(mouse=datasource[1])
+ggplot(data=weird_cells, aes(x=angle_bins, y=firing_rate, color=mouse)) + 
+    facet_wrap( ~ cellname, ncol=3, scale='free_y') +
+    geom_line() +
+    labs(x="Angle (degrees)", y="Firing rate (spikes/s)") +
+    theme(axis.title.x=element_blank(), axis.title.y=element_blank()) + 
+    scale_x_continuous(breaks = c(0,180,360))
+caption = "\\label{multipeak}\\textbf{Cells with multipeak tuning}"
+
+```
+
 
 ```{r}
 ## Shift data where tuning curves are close to border
@@ -181,3 +222,5 @@ thalamus_cells[thalamus_cells$angle_bins < 0,]$angle_bins = 360 + thalamus_cells
 cortex_cells[cortex_cells$cellname %in% shifted_cortex,]$angle_bins = 180 - cortex_cells[cortex_cells$cellname %in% shifted_cortex,]$angle_bins
 cortex_cells[cortex_cells$angle_bins < 0,]$angle_bins = 360 + cortex_cells[cortex_cells$angle_bins < 0,]$angle_bins
 ```
+
+

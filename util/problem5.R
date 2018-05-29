@@ -122,19 +122,22 @@ angleDiff = function(angle1, angle2){
 
 ## Mutual information
 
-calculateMutualInformation = function(binned_awake_angles, momentary_population_matrix, cellnumber){
-        
+calculateMutualInformation = function(binned_awake_angles, momentary_population_matrix, cellnumber, smoothing_window){
+    
+    library(entropy)
+    
     response = momentary_population_matrix[cellnumber,]
     
-    # Convert from firing rate to number of spikes and transpose
-    response = response#*(200/1000)
+    # Convert from firing rate to number of spikes
+    response = response*(2*smoothing_window/1000)
     
-    ## I tried implementing this myself first, the trends look correct, but my values are huge,
+
+    stimulus_dist = estimateDistribution(binned_awake_angles)
+    p_conditional_response = calculateConditionalResponse(response, binned_awake_angles)
+    response_dist = estimateDistribution(response)
+
+    ## I tried implementing this myself first, the trends look correct, but my values are wrong
     ## probably some normalization issues.
-    # stimulus_dist = estimateDistribution(binned_awake_angles)
-    # p_conditional_response = calculateConditionalResponse(response, binned_awake_angles)
-    # response_dist = estimateDistribution(response)
-    # 
     # information = 0
     # for(s in 1:length(stimulus_dist)){
     #     for(r in 1:length(response_dist)){
@@ -148,12 +151,11 @@ calculateMutualInformation = function(binned_awake_angles, momentary_population_
     # 
     #     }
     # }
-    count_stim = freqs.empirical(binned_awake_angles)
-    count_resp = freqs.empirical(response)
-    return(mi.empirical(table(count_stim,count_resp)))
-    # return(information)
-    #sum(stimulus_dist*p_conditional_response*log2(p_conditional_response/response_dist))
     
+    # count_stim = freqs.empirical(table(binned_awake_angles))
+    # count_resp = freqs.empirical(table(response))
+    return(mi.empirical(p_conditional_response))
+    # return(information)
 }
 
 # I.e P(r|s)
@@ -168,6 +170,7 @@ calculateConditionalResponse = function(response, binned_awake_angles){
         result = cbind(result, response_given_stim$Freq)
     }
     result = result[,-1]
+    result = result/sum(rowSums(result))
     return(result)
 }
 
